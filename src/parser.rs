@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{ HashSet, HashMap };
 use crate::ast::graph::Graph;
 use crate::ast::graph::SubGraph;
 use crate::ast::node::Node;
@@ -10,7 +10,7 @@ use graphviz_ffi::{
     agfstnode, agnxtnode, 
     agfstout, agnxtout,
     agnxtattr,
-    agnameof };
+    agroot, agnameof };
 
 macro_rules! to_c_string {
     ($str:expr) => {
@@ -52,12 +52,19 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
     };
 
     // parse nodes and edges
-    let (nodes, edges) = unsafe {
+    let (nodes, edges) = unsafe { 
+        let subgraphs: Vec<String> = {
+            let subgraphs: HashSet<String> = subgraphs.iter().map(|s| s.id.clone()).collect();
+            let mut subgraphs = Vec::from_iter(subgraphs);
+            subgraphs.sort_by(|a, b| b.len().cmp(&a.len()));
+
+            subgraphs
+        }; 
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
         let mut node = agfstnode(graph);
         while !node.is_null() {
-            let (n, mut es) = parse_node(graph, node, &keys);
+            let (n, mut es) = parse_node(node, graph, &subgraphs, &keys);
             nodes.push(n);
             edges.append(&mut es);
 
@@ -75,7 +82,7 @@ pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
     let parent = unsafe {
         let parent = agparent(graph);
         if parent.is_null() {
-            "root".to_string()
+            id.clone()
         } else {
             parse_name(parent as _)
         }
@@ -98,8 +105,28 @@ pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
     subgraphs
 }
 
-pub fn parse_node(graph: *mut Agraph_s, node: *mut Agnode_s, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
+pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, subgraphs: &Vec<String>, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
+    
+    let parent = {
+        let mut parent = unsafe {
+            let parent = agroot(node as _);
+            parse_name(parent as _)
+        };
+        for subgraph in subgraphs {
+            let prefix = if subgraph.starts_with("cluster_") {
+                &subgraph[8..]
+            } else {
+                subgraph.as_str()
+            };
+            if id.starts_with(prefix) {
+                parent = subgraph.clone();
+                break;
+            }
+        }
+
+        parent
+    };
 
     let attrs = unsafe {
         let mut attrs = HashMap::new();
@@ -128,7 +155,7 @@ pub fn parse_node(graph: *mut Agraph_s, node: *mut Agnode_s, keys: &Vec<*mut i8>
         edges
     };
 
-    let node = Node { id, attrs };
+    let node = Node { id, parent, attrs };
 
     (node, edges)
 }
