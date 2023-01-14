@@ -1,8 +1,5 @@
 use std::collections::{ HashSet, HashMap };
-use crate::ast::graph::Graph;
-use crate::ast::graph::SubGraph;
-use crate::ast::node::Node;
-use crate::ast::edge::Edge;
+use crate::structs::{ Graph, SubGraph, Node, Edge };
 use graphviz_ffi::{ 
     Agraph_s, Agnode_s, Agedge_s, Agsym_s,
     fopen, agread, agget, 
