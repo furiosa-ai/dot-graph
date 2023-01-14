@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use crate::ast::graph::Graph;
 use crate::ast::graph::SubGraph;
 use crate::ast::node::Node;
+use crate::ast::edge::Edge;
 use graphviz_ffi::{ 
     Agraph_s, Agnode_s, Agedge_s, Agsym_s,
     fopen, agread, agget, 
     agfstsubg, agnxtsubg, agparent,
     agfstnode, agnxtnode, 
-    agfstedge, agnxtedge,
+    agfstout, agnxtout,
     agnxtattr,
     agnameof };
 
@@ -35,10 +36,11 @@ pub fn parse(path: &str) -> Graph {
 }
 
 pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
+    // parse subgraphs
     let subgraphs = parse_subgraph(graph);
 
+    // parse node attr names
     let keys = unsafe {
-        // fetch node attr names
         let mut keys = Vec::new();
         let mut key = agnxtattr(graph, 1, 0 as *mut Agsym_s);
         while !key.is_null() {
@@ -49,21 +51,23 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
         keys
     };
 
-    let nodes = unsafe {
-        // parse nodes
+    // parse nodes and edges
+    let (nodes, edges) = unsafe {
         let mut nodes = Vec::new();
+        let mut edges = Vec::new();
         let mut node = agfstnode(graph);
         while !node.is_null() {
-            let n = parse_node(node, &keys);
+            let (n, mut es) = parse_node(graph, node, &keys);
             nodes.push(n);
+            edges.append(&mut es);
 
             node = agnxtnode(graph, node);
         }
 
-        nodes
+        (nodes, edges)
     };
 
-    Graph { subgraphs, nodes, edges: Vec::new() }
+    Graph { subgraphs, nodes, edges }
 }
 
 pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
@@ -94,7 +98,7 @@ pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
     subgraphs
 }
 
-pub fn parse_node(node: *mut Agnode_s, keys: &Vec<*mut i8>) -> Node {
+pub fn parse_node(graph: *mut Agraph_s, node: *mut Agnode_s, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
 
     let attrs = unsafe {
@@ -111,12 +115,31 @@ pub fn parse_node(node: *mut Agnode_s, keys: &Vec<*mut i8>) -> Node {
         attrs
     };
 
-    Node { id, attrs }
+    let edges = unsafe {
+        let mut edges = Vec::new();
+        let mut edge = agfstout(graph, node);
+        while !edge.is_null() {
+            let e = parse_edge(edge, node);
+            edges.push(e);
+
+            edge = agnxtout(graph, edge);
+        }
+
+        edges
+    };
+
+    let node = Node { id, attrs };
+
+    (node, edges)
 }
 
-pub fn parse_edge(edge: *mut Agedge_s) {
-    let name = parse_name(edge as _);
-    println!("{}", name);
+pub fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s) -> Edge {
+    let from = parse_name(node as _);
+    let to = unsafe {
+        parse_name((*edge).node as _)
+    };
+
+    Edge { from, to }
 }
 
 pub fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {
