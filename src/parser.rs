@@ -108,6 +108,9 @@ pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
 pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, subgraphs: &Vec<String>, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
     
+    // TODO
+    // this performs longest prefix match for finding parent subgraph of a node
+    // it may not work with general IR graphs
     let parent = {
         let mut parent = unsafe {
             let parent = agroot(node as _);
