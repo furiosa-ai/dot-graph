@@ -1,6 +1,6 @@
-extern crate dot_parser;
+extern crate dot_graph;
 
-use dot_parser::parser::parse;
+use dot_graph::parser::parse;
 
 fn main() {
     let path = std::env::args().nth(1).unwrap();
