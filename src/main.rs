@@ -4,7 +4,8 @@ use dot_graph::parser::parse;
 
 fn main() {
     let path = std::env::args().nth(1).unwrap();
-    let graph = parse(&path);
+    let mut graph = parse(&path);
+    graph.topsort();
 
     println!("{:?}", graph.subgraphs);
 

@@ -1,4 +1,4 @@
-use std::collections::{ HashSet, HashMap };
+use std::collections::{ HashSet, BTreeMap };
 use crate::structs::{ Graph, SubGraph, Node, Edge };
 use graphviz_ffi::{ 
     Agraph_s, Agnode_s, Agedge_s, Agsym_s,
@@ -129,7 +129,7 @@ pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, subgraphs: &Vec<Str
     };
 
     let attrs = unsafe {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
 
         for key in keys {
             let value = agget(node as _, *key);

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -13,11 +13,11 @@ pub struct SubGraph {
     pub parent: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Node {
     pub id: String,
     pub parent: String,
-    pub attrs: HashMap<String, String>,
+    pub attrs: BTreeMap<String, String>,
 }
 
 #[derive(Debug)]
