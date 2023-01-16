@@ -1,7 +1,7 @@
 use std::collections::{ BTreeMap, HashSet, HashMap };
 use bimap::BiMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Graph {
     pub subgraphs: Vec<SubGraph>,
 
@@ -13,7 +13,7 @@ pub struct Graph {
     pub bwdmap: EdgeMap,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SubGraph {
     pub id: String,
     pub parent: String,
@@ -26,7 +26,7 @@ pub struct Node {
     pub attrs: BTreeMap<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge {
     pub from: String,
     pub to: String,

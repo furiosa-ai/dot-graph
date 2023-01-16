@@ -13,6 +13,13 @@ impl Graph {
         graph
     }
 
+    pub fn lookup(&self, id: &str) -> Option<&Node> {
+        match self.lookup.get_by_left(id) {
+            Some(idx) => Some(&self.nodes[*idx]),
+            None => None,
+        }
+    }
+
     fn topsort(&mut self) {
         let mut indegrees: HashMap<usize, usize> = (0..self.nodes.len()).map(|idx| (idx, 0)).collect();
         for (to, froms) in &self.bwdmap {
