@@ -71,7 +71,7 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
         (nodes, edges)
     };
 
-    Graph { subgraphs, nodes, edges }
+    Graph::new(subgraphs, nodes, edges)
 }
 
 pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
