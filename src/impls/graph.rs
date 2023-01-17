@@ -13,10 +13,32 @@ impl Graph {
         graph
     }
 
-    pub fn lookup(&self, id: &str) -> Option<&Node> {
+    pub fn search(&self, id: &str) -> Option<&Node> {
         match self.lookup.get_by_left(id) {
             Some(idx) => Some(&self.nodes[*idx]),
             None => None,
+        }
+    }
+
+    pub fn froms(&self, id: &str) -> HashSet<&str> { 
+        match self.lookup.get_by_left(id) {
+            Some(idx) => {
+                let empty = HashSet::new();
+                let froms = self.bwdmap.get(idx).cloned().unwrap_or(empty);
+                froms.iter().map(|idx| self.nodes[*idx].id.as_str()).collect()
+            },
+            None => HashSet::new()
+        }
+    }
+
+    pub fn tos(&self, id: &str) -> HashSet<&str> { 
+        match self.lookup.get_by_left(id) {
+            Some(idx) => {
+                let empty = HashSet::new();
+                let tos = self.fwdmap.get(idx).cloned().unwrap_or(empty);
+                tos.iter().map(|idx| self.nodes[*idx].id.as_str()).collect()
+            },
+            None => HashSet::new()
         }
     }
 
