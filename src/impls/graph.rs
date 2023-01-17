@@ -110,6 +110,23 @@ impl Graph {
 
         (fwdmap, bwdmap)
     }
+
+    pub fn to_dot(&self) -> String {
+        let mut dot = String::from("");
+        dot.push_str("digraph DAG {\n");
+
+        for node in &self.nodes {
+            dot.push_str(&format!("\t{}\n", &node.to_dot(1)));
+        }
+
+        for edge in &self.edges {
+            dot.push_str(&format!("\t{}\n", &edge.to_dot(1)));
+        }
+
+        dot.push_str("}");
+
+        dot
+    }
 }
 
 impl SubGraph {

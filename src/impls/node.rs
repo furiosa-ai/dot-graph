@@ -1,6 +1,26 @@
 use std::fmt;
 use crate::structs::Node;
 
+impl Node {
+    pub fn to_dot(&self, indent: usize) -> String {
+        let indent = "\t".repeat(indent);
+        let mut dot = String::from("");
+
+        dot.push_str(&format!("{}{}[\n", indent, self.id));
+        for (key, value) in &self.attrs {
+            // TODO naive workaround to visualize HTML strings
+            if value.contains("TABLE") {
+                dot.push_str(&format!("{}{}=<{}>\n", indent, key, value));
+            } else {
+                dot.push_str(&format!("{}{}=\"{}\"\n", indent, key, value));
+            }
+        }
+        dot.push_str(&format!("{}];", indent));
+
+        dot
+    }
+}
+
 impl fmt::Display for Node {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str("id : ")?;
