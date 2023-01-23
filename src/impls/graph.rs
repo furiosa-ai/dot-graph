@@ -20,6 +20,24 @@ impl Graph {
         }
     }
 
+    pub fn filter(&self, ids: &Vec<String>) -> Graph {
+        let mut nodes = Vec::new();
+        for id in ids {
+            let idx = self.lookup.get_by_left(id).unwrap();
+            nodes.push(self.nodes[*idx].clone());
+        }
+
+        let mut edges = Vec::new();
+        for edge in &self.edges {
+            if ids.contains(&edge.from) && ids.contains(&edge.to) {
+                edges.push(edge.clone());
+            }
+        }
+
+        // TODO filter subgraphs also
+        Self::new(self.subgraphs.clone(), nodes, edges)
+    }
+
     pub fn froms(&self, id: &str) -> HashSet<&str> { 
         match self.lookup.get_by_left(id) {
             Some(idx) => {
