@@ -20,7 +20,7 @@ impl Graph {
         }
     }
 
-    pub fn filter(&self, ids: &Vec<String>) -> Graph {
+    pub fn sub(&self, ids: &Vec<String>) -> Graph {
         let mut nodes = Vec::new();
         for id in ids {
             let idx = self.lookup.get_by_left(id).unwrap();
