@@ -18,5 +18,5 @@ fn main() {
     }
     */
 
-    println!("{}", graph.to_dot());
+    println!("{}", graph.filter("graph1_subgraph34").unwrap().to_dot());
 }

@@ -14,7 +14,7 @@ impl Graph {
         Graph { id, root, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
     }
 
-    pub fn filter(&self, prefix: &str) -> Graph {
+    pub fn filter(&self, prefix: &str) -> Option<Graph> {
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
         for (idx, node) in (&self.nodes).iter().enumerate() {
@@ -34,12 +34,16 @@ impl Graph {
         }
 
         let root = self.root.filter(&nreplace, &ereplace);
+        match root {
+            Some(root) => {
+                let nlookup = Self::get_nlookup(&nodes);
+                let elookup = Self::get_elookup(&edges);
+                let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
 
-        let nlookup = Self::get_nlookup(&nodes);
-        let elookup = Self::get_elookup(&edges);
-        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
-
-        Graph { id: self.id.clone(), root, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
+                Some(Graph { id: self.id.clone(), root, nodes, nlookup, edges, elookup, fwdmap, bwdmap })
+            },
+            None => None
+        }
     }
 
     pub fn search(&self, id: &str) -> Option<&Node> {
@@ -153,10 +157,13 @@ impl Graph {
 }
 
 impl SubGraph {
-    pub fn filter(&self, nreplace: &HashMap<usize, usize>, ereplace: &HashMap<usize, usize>) -> SubGraph {
+    pub fn filter(&self, nreplace: &HashMap<usize, usize>, ereplace: &HashMap<usize, usize>) -> Option<SubGraph> {
         let mut subgraphs = Vec::new();
         for subgraph in &self.subgraphs {
-            subgraphs.push(Box::new((*subgraph).filter(nreplace, ereplace)));
+            match (*subgraph).filter(nreplace, ereplace) {
+                Some(subgraph) => subgraphs.push(Box::new(subgraph)),
+                None => {},
+            }
         }
 
         let mut nodes = Vec::new();
@@ -175,7 +182,11 @@ impl SubGraph {
             }
         }
 
-        SubGraph { id: self.id.clone(), subgraphs, nodes, edges } 
+        if subgraphs.is_empty() && nodes.is_empty() && edges.is_empty() {
+            None
+        } else {
+            Some(SubGraph { id: self.id.clone(), subgraphs, nodes, edges })
+        }
     }
 
     pub fn to_dot(&self, indent: usize, nodes: &Vec<Node>, edges: &Vec<Edge>) -> String {
