@@ -3,19 +3,19 @@ use crate::structs::Node;
 
 impl Node {
     pub fn to_dot(&self, indent: usize) -> String {
-        let indent = "\t".repeat(indent);
+        let tabs = "\t".repeat(indent);
         let mut dot = String::from("");
 
-        dot.push_str(&format!("{}{}[\n", indent, self.id));
+        dot.push_str(&format!("{}{}[\n", tabs, self.id));
         for (key, value) in &self.attrs {
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                dot.push_str(&format!("{}{}=<{}>\n", indent, key, value));
+                dot.push_str(&format!("{}{}=<{}>\n", tabs, key, value));
             } else {
-                dot.push_str(&format!("{}{}=\"{}\"\n", indent, key, value));
+                dot.push_str(&format!("{}{}=\"{}\"\n", tabs, key, value));
             }
         }
-        dot.push_str(&format!("{}];", indent));
+        dot.push_str(&format!("{}];", tabs));
 
         dot
     }
@@ -36,10 +36,10 @@ impl fmt::Display for Node {
                     break;
                 }
 
-                // TODO indentation workaround (https://github.com/fdehau/tui-rs/issues/98)
+                // TODO tabsation workaround (https://github.com/fdehau/tui-rs/issues/98)
                 if idx > 0 {
-                    let indent = "\u{2800}";
-                    fmt.write_str(format!("{}{}", indent, indent).as_str())?;
+                    let tabs = "\u{2800}";
+                    fmt.write_str(format!("{}{}", tabs, tabs).as_str())?;
                 }
                 fmt.write_str(value)?;
                 fmt.write_str("\n")?;

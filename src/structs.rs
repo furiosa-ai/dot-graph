@@ -1,9 +1,11 @@
 use std::collections::{ BTreeMap, HashSet, HashMap };
 use bimap::BiMap;
 
+// TODO current graph data structure assumes that the root DAG doesn't hold any nodes by itself
 #[derive(Debug, Clone)]
 pub struct Graph {
-    pub subgraphs: Vec<SubGraph>,
+    pub id: String,
+    pub root: SubGraph,
 
     pub nodes: Vec<Node>,
     pub lookup: BiMap<String, usize>,
@@ -16,17 +18,29 @@ pub struct Graph {
 #[derive(Debug, Clone)]
 pub struct SubGraph {
     pub id: String,
-    pub parent: String,
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Node {
-    pub id: String,
-    pub parent: String,
-    pub attrs: BTreeMap<String, String>,
+    pub subgraphs: Vec<Box<SubGraph>>,
+
+    pub nodes: Vec<usize>,
+    pub edges: Vec<(usize, usize)>,
 }
 
 #[derive(Debug, Clone)]
+pub struct IGraph {
+    pub id: String,
+    pub subgraphs: Vec<Box<IGraph>>,
+
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Node {
+    pub id: String,
+    pub attrs: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Edge {
     pub from: String,
     pub to: String,

@@ -1,13 +1,14 @@
 use std::collections::{ HashSet, BTreeMap };
-use crate::structs::{ Graph, SubGraph, Node, Edge };
+use std::boxed::Box;
+use crate::structs::{ Graph, SubGraph, IGraph, Node, Edge };
 use graphviz_ffi::{ 
     Agraph_s, Agnode_s, Agedge_s, Agsym_s,
     fopen, agread, agget, 
-    agfstsubg, agnxtsubg, agparent,
+    agfstsubg, agnxtsubg,
     agfstnode, agnxtnode, 
     agfstout, agnxtout,
     agnxtattr,
-    agroot, agnameof };
+    agnameof };
 
 macro_rules! to_c_string {
     ($str:expr) => {
@@ -33,8 +34,31 @@ pub fn parse(path: &str) -> Graph {
 }
 
 pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
+    let id = parse_name(graph as _);
+
+    let mut nodes = HashSet::new();
+    let mut edges = HashSet::new();
+    let root = parse_igraph(graph, &mut nodes, &mut edges);
+
+    Graph::new(id, root, Vec::from_iter(nodes), Vec::from_iter(edges))
+}
+
+pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edges_visited: &mut HashSet<Edge>) -> IGraph {
+    let id = parse_name(graph as _);
+
     // parse subgraphs
-    let subgraphs = parse_subgraph(graph);
+    let subgraphs = unsafe {
+        let mut subgraphs = Vec::new();
+        let mut subgraph = agfstsubg(graph);
+        while !subgraph.is_null() {
+            let graph = parse_igraph(subgraph, nodes_visited, edges_visited);
+
+            subgraphs.push(Box::new(graph));
+            subgraph = agnxtsubg(subgraph);
+        }
+
+        subgraphs
+    };
 
     // parse node attr names
     let keys = unsafe {
@@ -50,20 +74,21 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
 
     // parse nodes and edges
     let (nodes, edges) = unsafe { 
-        let subgraphs: Vec<String> = {
-            let subgraphs: HashSet<String> = subgraphs.iter().map(|s| s.id.clone()).collect();
-            let mut subgraphs = Vec::from_iter(subgraphs);
-            subgraphs.sort_by(|a, b| b.len().cmp(&a.len()));
-
-            subgraphs
-        }; 
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
         let mut node = agfstnode(graph);
         while !node.is_null() {
-            let (n, mut es) = parse_node(node, graph, &subgraphs, &keys);
-            nodes.push(n);
-            edges.append(&mut es);
+            let (n, es) = parse_node(node, graph, &keys);
+            if !nodes_visited.contains(&n) {
+                nodes_visited.insert(n.clone());
+                nodes.push(n);
+            }
+            for e in es {
+                if !edges_visited.contains(&e) {
+                    edges_visited.insert(e.clone());
+                    edges.push(e);
+                }
+            }
 
             node = agnxtnode(graph, node);
         }
@@ -71,62 +96,11 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
         (nodes, edges)
     };
 
-    Graph::new(subgraphs, nodes, edges)
+    IGraph { id, subgraphs, nodes, edges }
 }
 
-pub fn parse_subgraph(graph: *mut Agraph_s) -> Vec<SubGraph> {
-    let id = parse_name(graph as _);
-    let parent = unsafe {
-        let parent = agparent(graph);
-        if parent.is_null() {
-            id.clone()
-        } else {
-            parse_name(parent as _)
-        }
-    };
-    let subgraph = SubGraph { id, parent };
-
-    let mut subgraphs = unsafe {
-        let mut subgraphs = Vec::new();
-        let mut subgraph = agfstsubg(graph);
-        while !subgraph.is_null() {
-            subgraphs.append(&mut parse_subgraph(subgraph));
-            subgraph = agnxtsubg(subgraph);
-        }
-
-        subgraphs
-    };
-
-    subgraphs.push(subgraph);
-
-    subgraphs
-}
-
-pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, subgraphs: &Vec<String>, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
+pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, keys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
-    
-    // TODO
-    // this performs longest prefix match for finding parent subgraph of a node
-    // it may not work with general IR graphs
-    let parent = {
-        let mut parent = unsafe {
-            let parent = agroot(node as _);
-            parse_name(parent as _)
-        };
-        for subgraph in subgraphs {
-            let prefix = if subgraph.starts_with("cluster_") {
-                &subgraph[8..]
-            } else {
-                subgraph.as_str()
-            };
-            if id.starts_with(prefix) {
-                parent = subgraph.clone();
-                break;
-            }
-        }
-
-        parent
-    };
 
     let attrs = unsafe {
         let mut attrs = BTreeMap::new();
@@ -155,7 +129,7 @@ pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, subgraphs: &Vec<Str
         edges
     };
 
-    let node = Node { id, parent, attrs };
+    let node = Node { id, attrs };
 
     (node, edges)
 }
