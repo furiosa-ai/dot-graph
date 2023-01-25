@@ -6,48 +6,51 @@ use crate::structs::{ Graph, SubGraph, IGraph, Node, Edge, EdgeMap };
 impl Graph {
     pub fn new(id: String, root: IGraph, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
         let nodes = Self::topsort(nodes, &edges);
-        let lookup = Self::get_lookup(&nodes);
-        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &lookup);
-        let root = root.encode(&lookup);
+        let nlookup = Self::get_nlookup(&nodes);
+        let elookup = Self::get_elookup(&edges);
+        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
+        let root = root.encode(&nlookup, &elookup);
 
-        Graph { id, root, nodes, lookup, edges, fwdmap, bwdmap }
+        Graph { id, root, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
     }
 
     pub fn filter(&self, prefix: &str) -> Graph {
         let mut nodes = Vec::new();
-        let mut replace = HashMap::new();
+        let mut nreplace = HashMap::new();
         for (idx, node) in (&self.nodes).iter().enumerate() {
             if node.id.starts_with(prefix) {
                 nodes.push(node.clone());
-                replace.insert(idx, nodes.len() - 1);
+                nreplace.insert(idx, nodes.len() - 1);
             }
         }
 
         let mut edges = Vec::new();
-        for edge in &self.edges {
+        let mut ereplace = HashMap::new();
+        for (idx, edge) in (&self.edges).iter().enumerate() {
             if edge.from.starts_with(prefix) && edge.to.starts_with(prefix) {
                 edges.push(edge.clone());
+                ereplace.insert(idx, edges.len() - 1);
             }
         }
 
-        let root = self.root.filter(&replace);
+        let root = self.root.filter(&nreplace, &ereplace);
 
-        let lookup = Self::get_lookup(&nodes);
-        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &lookup);
+        let nlookup = Self::get_nlookup(&nodes);
+        let elookup = Self::get_elookup(&edges);
+        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
 
-        // TODO filter subgraphs also
-        Graph { id: self.id.clone(), root, nodes, lookup, edges, fwdmap, bwdmap }
+        Graph { id: self.id.clone(), root, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
     }
 
     pub fn search(&self, id: &str) -> Option<&Node> {
-        match self.lookup.get_by_left(id) {
+        match self.nlookup.get_by_left(id) {
             Some(idx) => Some(&self.nodes[*idx]),
             None => None,
         }
     }
 
     pub fn froms(&self, id: &str) -> HashSet<&str> { 
-        match self.lookup.get_by_left(id) {
+        match self.nlookup.get_by_left(id) {
             Some(idx) => {
                 let empty = HashSet::new();
                 let froms = self.bwdmap.get(idx).cloned().unwrap_or(empty);
@@ -58,7 +61,7 @@ impl Graph {
     }
 
     pub fn tos(&self, id: &str) -> HashSet<&str> { 
-        match self.lookup.get_by_left(id) {
+        match self.nlookup.get_by_left(id) {
             Some(idx) => {
                 let empty = HashSet::new();
                 let tos = self.fwdmap.get(idx).cloned().unwrap_or(empty);
@@ -69,7 +72,7 @@ impl Graph {
     }
 
     fn topsort(nodes: Vec<Node>, edges: &Vec<Edge>) -> Vec<Node> {
-        let lookup = Self::get_lookup(&nodes);
+        let lookup = Self::get_nlookup(&nodes);
         let (fwdmap, bwdmap) = Self::get_edgemaps(edges, &lookup);
 
         let mut indegrees: HashMap<usize, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
@@ -108,10 +111,19 @@ impl Graph {
         nodes
     }
 
-    fn get_lookup(nodes: &Vec<Node>) -> BiMap<String, usize> {
+    fn get_nlookup(nodes: &Vec<Node>) -> BiMap<String, usize> {
         let mut bimap = BiMap::new();
         for (idx, node) in nodes.iter().enumerate() {
             bimap.insert(node.id.clone(), idx);
+        }
+
+        bimap
+    }
+
+    fn get_elookup(edges: &Vec<Edge>) -> BiMap<(String, String), usize> {
+        let mut bimap = BiMap::new();
+        for (idx, edge) in edges.iter().enumerate() {
+            bimap.insert((edge.from.clone(), edge.to.clone()), idx);
         }
 
         bimap
@@ -136,20 +148,20 @@ impl Graph {
     }
 
     pub fn to_dot(&self) -> String {
-        self.root.to_dot(0, &self.nodes)
+        self.root.to_dot(0, &self.nodes, &self.edges)
     }
 }
 
 impl SubGraph {
-    pub fn filter(&self, replace: &HashMap<usize, usize>) -> SubGraph {
+    pub fn filter(&self, nreplace: &HashMap<usize, usize>, ereplace: &HashMap<usize, usize>) -> SubGraph {
         let mut subgraphs = Vec::new();
         for subgraph in &self.subgraphs {
-            subgraphs.push(Box::new((*subgraph).filter(replace)));
+            subgraphs.push(Box::new((*subgraph).filter(nreplace, ereplace)));
         }
 
         let mut nodes = Vec::new();
         for node in &self.nodes {
-            match replace.get(&node) {
+            match nreplace.get(&node) {
                 Some(node) => nodes.push(*node),
                 None => {},
             }
@@ -157,16 +169,16 @@ impl SubGraph {
 
         let mut edges = Vec::new();
         for edge in &self.edges {
-            match (replace.get(&edge.0), replace.get(&edge.1)) {
-                (Some(from), Some(to)) => edges.push((*from, *to)),
-                _ => {},
+            match ereplace.get(&edge) {
+                Some(edge) => edges.push(*edge),
+                None => {},
             }
         }
 
         SubGraph { id: self.id.clone(), subgraphs, nodes, edges } 
     }
 
-    pub fn to_dot(&self, indent: usize, nodes: &Vec<Node>) -> String {
+    pub fn to_dot(&self, indent: usize, nodes: &Vec<Node>, edges: &Vec<Edge>) -> String {
         let tabs = "\t".repeat(indent);
         let mut dot = String::from("");
 
@@ -177,7 +189,7 @@ impl SubGraph {
         }
 
         for subgraph in &self.subgraphs {
-            dot.push_str(&subgraph.to_dot(indent + 1, nodes));
+            dot.push_str(&subgraph.to_dot(indent + 1, nodes, edges));
         }
 
         for node in &self.nodes {
@@ -186,24 +198,21 @@ impl SubGraph {
         }
 
         for edge in &self.edges {
-            let edge = Edge {
-                from: nodes[edge.0].id.clone(),
-                to: nodes[edge.1].id.clone(),
-            };
+            let edge = &edges[*edge];
             dot.push_str(&format!("{}{}\n", tabs, &edge.to_dot(indent + 1)));
         }
 
-        dot.push_str("}\n");
+        dot.push_str(&format!("{} }}\n", tabs));
 
         dot
     }
 }
 
 impl IGraph {
-    pub fn encode(&self, lookup: &BiMap<String, usize>) -> SubGraph {
-        let subgraphs: Vec<Box<SubGraph>> = self.subgraphs.iter().map(|subgraph| Box::new((*subgraph).encode(lookup))).collect();
-        let nodes: Vec<usize> = self.nodes.iter().map(|node| lookup.get_by_left(&node.id).unwrap()).cloned().collect();
-        let edges: Vec<(usize, usize)> = self.edges.iter().map(|edge| (lookup.get_by_left(&edge.from).unwrap().clone(), lookup.get_by_left(&edge.to).unwrap().clone())).collect();
+    pub fn encode(&self, nlookup: &BiMap<String, usize>, elookup: &BiMap<(String, String), usize>) -> SubGraph {
+        let subgraphs: Vec<Box<SubGraph>> = self.subgraphs.iter().map(|subgraph| Box::new((*subgraph).encode(nlookup, elookup))).collect();
+        let nodes: Vec<usize> = self.nodes.iter().map(|node| nlookup.get_by_left(&node.id).unwrap()).cloned().collect();
+        let edges: Vec<usize> = self.edges.iter().map(|edge| elookup.get_by_left(&(edge.from.clone(), edge.to.clone())).unwrap()).cloned().collect();
 
         SubGraph { id: self.id.clone(), subgraphs, nodes, edges }
     }
