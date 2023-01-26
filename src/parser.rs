@@ -121,7 +121,9 @@ pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, nkeys: &Vec<*mut i8
 
             let key = to_rust_string!(*key);
             let value = to_rust_string!(value);
-            attrs.insert(key, value);
+            if !value.is_empty() {
+                attrs.insert(key, value);
+            }
         }
 
         attrs
@@ -159,7 +161,9 @@ pub fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &Vec<*mut i8>
 
             let key = to_rust_string!(*key);
             let value = to_rust_string!(value);
-            attrs.insert(key, value);
+            if !value.is_empty() {
+                attrs.insert(key, value);
+            }
         }
 
         attrs

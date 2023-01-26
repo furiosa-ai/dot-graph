@@ -18,5 +18,5 @@ fn main() {
     }
     */
 
-    println!("{}", graph.filter("graph1_subgraph34").unwrap().to_dot());
+    println!("{}", graph.filter("graph3_stream7").unwrap().to_dot());
 }

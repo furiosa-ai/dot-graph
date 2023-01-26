@@ -5,14 +5,29 @@ impl Edge {
         let tabs = "\t".repeat(indent);
         let mut dot = String::from("");
 
-        match self.attrs.get("headport") {
-            Some(headport) => if !headport.is_empty() {
-                dot.push_str(&format!("{}{} -> {}:{}", tabs, self.from, self.to, headport))
-            } else {
-                dot.push_str(&format!("{}{} -> {}", tabs, self.from, self.to))
-            },
-            None => dot.push_str(&format!("{}{} -> {}", tabs, self.from, self.to)),
+        let headport = match self.attrs.get("headport") {
+            Some(headport) => format!(":{}", headport),
+            None => "".to_string(),
         };
+
+        let tailport = match self.attrs.get("tailport") {
+            Some(tailport) => format!(":{}", tailport),
+            None => "".to_string(),
+        };
+
+        dot.push_str(&format!("{}{}{} -> {}{}", tabs, self.from, tailport, self.to, headport));
+
+        let mut attrs = self.attrs.clone();
+        attrs.remove("headport");
+        attrs.remove("tailport");
+
+        if attrs.len() > 0 {
+            dot.push_str(" [ ");
+            for (key, value) in &attrs {
+                dot.push_str(&format!("{}={} ", key, value));
+            }
+            dot.push_str("]");
+        }
 
         dot
     }
