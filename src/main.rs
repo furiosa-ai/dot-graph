@@ -18,5 +18,5 @@ fn main() {
     }
     */
 
-    println!("{}", graph.filter("graph3_stream7").unwrap().to_dot());
+    println!("{}", graph.neighbors("graph0_subgraph0_tensor726", 5).unwrap().to_dot());
 }
