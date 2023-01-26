@@ -59,11 +59,11 @@ impl Graph {
     pub fn extract(&self, extract: Vec<usize>) -> Option<Graph> {
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
-        for (idx, node) in (&extract).iter().enumerate() {
-            let node = &self.nodes[*node];
-
-            nodes.push(node.clone());
-            nreplace.insert(idx, nodes.len() - 1);
+        for (idx, node) in (&self.nodes).iter().enumerate() {
+            if extract.contains(&idx) {
+                nodes.push(node.clone());
+                nreplace.insert(idx, nodes.len() - 1);
+            }
         }
 
         let mut edges = Vec::new();

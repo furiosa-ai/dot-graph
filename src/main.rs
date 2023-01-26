@@ -18,5 +18,6 @@ fn main() {
     }
     */
 
-    println!("{}", graph.neighbors("graph0_subgraph0_tensor726", 5).unwrap().to_dot());
+    //println!("{}", graph.neighbors("graph0_subgraph0_tensor726", 5).unwrap().to_dot());
+    println!("{}", graph.filter("graph1_subgraph37_tensor").unwrap().to_dot());
 }
