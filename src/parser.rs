@@ -1,14 +1,10 @@
-use std::collections::{ HashSet, BTreeMap };
+use crate::structs::{Edge, Graph, IGraph, Node};
+use graphviz_ffi::{
+    agfstnode, agfstout, agfstsubg, agget, agnameof, agnxtattr, agnxtnode, agnxtout, agnxtsubg,
+    agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
+};
 use std::boxed::Box;
-use crate::structs::{ Graph, IGraph, Node, Edge };
-use graphviz_ffi::{ 
-    Agraph_s, Agnode_s, Agedge_s, Agsym_s,
-    fopen, agread, agget, 
-    agfstsubg, agnxtsubg,
-    agfstnode, agnxtnode, 
-    agfstout, agnxtout,
-    agnxtattr,
-    agnameof };
+use std::collections::{BTreeMap, HashSet};
 
 macro_rules! to_c_string {
     ($str:expr) => {
@@ -23,14 +19,12 @@ macro_rules! to_rust_string {
 }
 
 pub fn parse(path: &str) -> Graph {
-    let graph = unsafe {
+    unsafe {
         let fp = fopen(to_c_string!(path), to_c_string!("r"));
 
         let graph = agread(fp as _, 0 as _);
         parse_graph(graph)
-    };
-
-    graph
+    }
 }
 
 pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
@@ -43,7 +37,11 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
     Graph::new(id, root, Vec::from_iter(nodes), Vec::from_iter(edges))
 }
 
-pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edges_visited: &mut HashSet<Edge>) -> IGraph {
+pub fn parse_igraph(
+    graph: *mut Agraph_s,
+    nodes_visited: &mut HashSet<Node>,
+    edges_visited: &mut HashSet<Edge>,
+) -> IGraph {
     let id = parse_name(graph as _);
 
     // parse subgraphs
@@ -63,7 +61,7 @@ pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edg
     // parse node attr names
     let nkeys = unsafe {
         let mut keys = Vec::new();
-        let mut key = agnxtattr(graph, 1, 0 as *mut Agsym_s);
+        let mut key = agnxtattr(graph, 1, std::ptr::null_mut::<Agsym_s>());
         while !key.is_null() {
             keys.push((*key).name);
             key = agnxtattr(graph, 1, key);
@@ -74,7 +72,7 @@ pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edg
 
     let ekeys = unsafe {
         let mut keys = Vec::new();
-        let mut key = agnxtattr(graph, 2, 0 as *mut Agsym_s);
+        let mut key = agnxtattr(graph, 2, std::ptr::null_mut::<Agsym_s>());
         while !key.is_null() {
             keys.push((*key).name);
             key = agnxtattr(graph, 2, key);
@@ -84,7 +82,7 @@ pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edg
     };
 
     // parse nodes and edges
-    let (nodes, edges) = unsafe { 
+    let (nodes, edges) = unsafe {
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
         let mut node = agfstnode(graph);
@@ -107,10 +105,20 @@ pub fn parse_igraph(graph: *mut Agraph_s, nodes_visited: &mut HashSet<Node>, edg
         (nodes, edges)
     };
 
-    IGraph { id, subgraphs, nodes, edges }
+    IGraph {
+        id,
+        subgraphs,
+        nodes,
+        edges,
+    }
 }
 
-pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, nkeys: &Vec<*mut i8>, ekeys: &Vec<*mut i8>) -> (Node, Vec<Edge>) {
+pub fn parse_node(
+    node: *mut Agnode_s,
+    graph: *mut Agraph_s,
+    nkeys: &Vec<*mut i8>,
+    ekeys: &Vec<*mut i8>,
+) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
 
     let attrs = unsafe {
@@ -149,9 +157,7 @@ pub fn parse_node(node: *mut Agnode_s, graph: *mut Agraph_s, nkeys: &Vec<*mut i8
 
 pub fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &Vec<*mut i8>) -> Edge {
     let from = parse_name(node as _);
-    let to = unsafe {
-        parse_name((*edge).node as _)
-    };
+    let to = unsafe { parse_name((*edge).node as _) };
 
     let attrs = unsafe {
         let mut attrs = BTreeMap::new();

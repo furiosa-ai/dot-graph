@@ -1,3 +1,3 @@
-pub mod structs;
 pub mod impls;
 pub mod parser;
+pub mod structs;

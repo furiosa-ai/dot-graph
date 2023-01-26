@@ -1,6 +1,6 @@
-use std::collections::{ HashSet, HashMap, VecDeque };
+use crate::structs::{Edge, EdgeMap, Graph, IGraph, Node};
 use bimap::BiMap;
-use crate::structs::{ Graph, IGraph, Node, Edge, EdgeMap };
+use std::collections::{HashMap, HashSet, VecDeque};
 
 impl Graph {
     pub fn new(id: String, root: IGraph, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
@@ -10,12 +10,21 @@ impl Graph {
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
         let root = root.encode(&nlookup, &elookup);
 
-        Graph { id, root, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
+        Graph {
+            id,
+            root,
+            nodes,
+            nlookup,
+            edges,
+            elookup,
+            fwdmap,
+            bwdmap,
+        }
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
         let mut nodes = Vec::new();
-        for (idx, node) in (&self.nodes).iter().enumerate() {
+        for (idx, node) in self.nodes.iter().enumerate() {
             if node.id.starts_with(prefix) {
                 nodes.push(idx);
             }
@@ -46,7 +55,7 @@ impl Graph {
             let empty = HashSet::new();
             let tos = self.fwdmap.get(&node).unwrap_or(&empty);
             let froms = self.bwdmap.get(&node).unwrap_or(&empty);
-            let nexts = tos.union(&froms);
+            let nexts = tos.union(froms);
 
             for next in nexts {
                 frontier.push_back((*next, vicinity + 1));
@@ -59,7 +68,7 @@ impl Graph {
     pub fn extract(&self, extract: Vec<usize>) -> Option<Graph> {
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
-        for (idx, node) in (&self.nodes).iter().enumerate() {
+        for (idx, node) in self.nodes.iter().enumerate() {
             if extract.contains(&idx) {
                 nodes.push(node.clone());
                 nreplace.insert(idx, nodes.len() - 1);
@@ -68,7 +77,7 @@ impl Graph {
 
         let mut edges = Vec::new();
         let mut ereplace = HashMap::new();
-        for (idx, edge) in (&self.edges).iter().enumerate() {
+        for (idx, edge) in self.edges.iter().enumerate() {
             let from = self.nlookup.get_by_left(&edge.from).unwrap();
             let to = self.nlookup.get_by_left(&edge.to).unwrap();
 
@@ -85,9 +94,18 @@ impl Graph {
                 let elookup = Self::get_elookup(&edges);
                 let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
 
-                Some(Graph { id: self.id.clone(), root, nodes, nlookup, edges, elookup, fwdmap, bwdmap })
-            },
-            None => None
+                Some(Graph {
+                    id: self.id.clone(),
+                    root,
+                    nodes,
+                    nlookup,
+                    edges,
+                    elookup,
+                    fwdmap,
+                    bwdmap,
+                })
+            }
+            None => None,
         }
     }
 
@@ -98,25 +116,28 @@ impl Graph {
         }
     }
 
-    pub fn froms(&self, id: &str) -> HashSet<&str> { 
+    pub fn froms(&self, id: &str) -> HashSet<&str> {
         match self.nlookup.get_by_left(id) {
             Some(idx) => {
                 let empty = HashSet::new();
                 let froms = self.bwdmap.get(idx).cloned().unwrap_or(empty);
-                froms.iter().map(|idx| self.nodes[*idx].id.as_str()).collect()
-            },
-            None => HashSet::new()
+                froms
+                    .iter()
+                    .map(|idx| self.nodes[*idx].id.as_str())
+                    .collect()
+            }
+            None => HashSet::new(),
         }
     }
 
-    pub fn tos(&self, id: &str) -> HashSet<&str> { 
+    pub fn tos(&self, id: &str) -> HashSet<&str> {
         match self.nlookup.get_by_left(id) {
             Some(idx) => {
                 let empty = HashSet::new();
                 let tos = self.fwdmap.get(idx).cloned().unwrap_or(empty);
                 tos.iter().map(|idx| self.nodes[*idx].id.as_str()).collect()
-            },
-            None => HashSet::new()
+            }
+            None => HashSet::new(),
         }
     }
 
@@ -126,7 +147,7 @@ impl Graph {
 
         let mut indegrees: HashMap<usize, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
         for (to, froms) in &bwdmap {
-            indegrees.insert(*to, froms.len()); 
+            indegrees.insert(*to, froms.len());
         }
 
         let mut visited: HashMap<usize, bool> = HashMap::new();
@@ -154,8 +175,11 @@ impl Graph {
                 }
             }
         }
-        
-        let nodes = sorted.iter().map(|idx| nodes[*idx].clone()).collect::<Vec<Node>>();
+
+        let nodes = sorted
+            .iter()
+            .map(|idx| nodes[*idx].clone())
+            .collect::<Vec<Node>>();
 
         nodes
     }
@@ -178,7 +202,7 @@ impl Graph {
         bimap
     }
 
-    fn get_edgemaps(edges: &Vec<Edge>, lookup: &BiMap<String, usize>)-> (EdgeMap, EdgeMap) {
+    fn get_edgemaps(edges: &Vec<Edge>, lookup: &BiMap<String, usize>) -> (EdgeMap, EdgeMap) {
         let mut fwdmap = EdgeMap::new();
         let mut bwdmap = EdgeMap::new();
 
@@ -186,10 +210,10 @@ impl Graph {
             let from = lookup.get_by_left(edge.from.as_str()).unwrap();
             let to = lookup.get_by_left(edge.to.as_str()).unwrap();
 
-            let entry = fwdmap.entry(*from).or_insert(HashSet::new());
+            let entry = fwdmap.entry(*from).or_default();
             entry.insert(*to);
 
-            let entry = bwdmap.entry(*to).or_insert(HashSet::new());
+            let entry = bwdmap.entry(*to).or_default();
             entry.insert(*from);
         }
 

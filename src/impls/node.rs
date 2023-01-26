@@ -1,5 +1,5 @@
-use std::fmt;
 use crate::structs::Node;
+use std::fmt;
 
 impl Node {
     pub fn to_dot(&self, indent: usize) -> String {
@@ -32,7 +32,7 @@ impl fmt::Display for Node {
             fmt.write_str(" : ")?;
             let values = value.split("\\l");
             for (idx, value) in values.enumerate() {
-                if value == "" {
+                if value.is_empty() {
                     break;
                 }
 
@@ -43,7 +43,7 @@ impl fmt::Display for Node {
                 }
                 fmt.write_str(value)?;
                 fmt.write_str("\n")?;
-            } 
+            }
         }
 
         Ok(())

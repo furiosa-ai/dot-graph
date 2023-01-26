@@ -1,36 +1,45 @@
+use crate::structs::{Edge, Node, SubGraph};
 use std::collections::HashMap;
-use crate::structs::{ SubGraph, Node, Edge };
 
 impl SubGraph {
-    pub fn extract(&self, nreplace: &HashMap<usize, usize>, ereplace: &HashMap<usize, usize>) -> Option<SubGraph> {
+    pub fn extract(
+        &self,
+        nreplace: &HashMap<usize, usize>,
+        ereplace: &HashMap<usize, usize>,
+    ) -> Option<SubGraph> {
         let mut subgraphs = Vec::new();
         for subgraph in &self.subgraphs {
             match (*subgraph).extract(nreplace, ereplace) {
                 Some(subgraph) => subgraphs.push(Box::new(subgraph)),
-                None => {},
+                None => {}
             }
         }
 
         let mut nodes = Vec::new();
         for node in &self.nodes {
-            match nreplace.get(&node) {
+            match nreplace.get(node) {
                 Some(node) => nodes.push(*node),
-                None => {},
+                None => {}
             }
         }
 
         let mut edges = Vec::new();
         for edge in &self.edges {
-            match ereplace.get(&edge) {
+            match ereplace.get(edge) {
                 Some(edge) => edges.push(*edge),
-                None => {},
+                None => {}
             }
         }
 
         if subgraphs.is_empty() && nodes.is_empty() && edges.is_empty() {
             None
         } else {
-            Some(SubGraph { id: self.id.clone(), subgraphs, nodes, edges })
+            Some(SubGraph {
+                id: self.id.clone(),
+                subgraphs,
+                nodes,
+                edges,
+            })
         }
     }
 

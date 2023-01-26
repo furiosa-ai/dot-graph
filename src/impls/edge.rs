@@ -15,18 +15,21 @@ impl Edge {
             None => "".to_string(),
         };
 
-        dot.push_str(&format!("{}{}{} -> {}{}", tabs, self.from, tailport, self.to, headport));
+        dot.push_str(&format!(
+            "{}{}{} -> {}{}",
+            tabs, self.from, tailport, self.to, headport
+        ));
 
         let mut attrs = self.attrs.clone();
         attrs.remove("headport");
         attrs.remove("tailport");
 
-        if attrs.len() > 0 {
+        if !attrs.is_empty() {
             dot.push_str(" [ ");
             for (key, value) in &attrs {
                 dot.push_str(&format!("{}={} ", key, value));
             }
-            dot.push_str("]");
+            dot.push(']');
         }
 
         dot

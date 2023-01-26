@@ -1,5 +1,5 @@
-use std::collections::{ BTreeMap, HashSet, HashMap };
 use bimap::BiMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct Graph {
