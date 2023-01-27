@@ -23,10 +23,10 @@ impl Graph {
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let mut nodes = Vec::new();
+        let mut nodes = HashSet::new();
         for (idx, node) in self.nodes.iter().enumerate() {
             if node.id.starts_with(prefix) {
-                nodes.push(idx);
+                nodes.insert(idx);
             }
         }
 
@@ -62,10 +62,10 @@ impl Graph {
             }
         }
 
-        self.extract(Vec::from_iter(visited))
+        self.extract(visited)
     }
 
-    pub fn extract(&self, extract: Vec<usize>) -> Option<Graph> {
+    pub fn extract(&self, extract: HashSet<usize>) -> Option<Graph> {
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
         for (idx, node) in self.nodes.iter().enumerate() {
