@@ -9,25 +9,22 @@ impl SubGraph {
     ) -> Option<SubGraph> {
         let mut subgraphs = Vec::new();
         for subgraph in &self.subgraphs {
-            match (*subgraph).extract(nreplace, ereplace) {
-                Some(subgraph) => subgraphs.push(Box::new(subgraph)),
-                None => {}
+            if let Some(subgraph) = subgraph.extract(nreplace, ereplace) {
+                subgraphs.push(Box::new(subgraph));
             }
         }
 
         let mut nodes = Vec::new();
         for node in &self.nodes {
-            match nreplace.get(node) {
-                Some(node) => nodes.push(*node),
-                None => {}
+            if let Some(&node) = nreplace.get(node) {
+                nodes.push(node);
             }
         }
 
         let mut edges = Vec::new();
         for edge in &self.edges {
-            match ereplace.get(edge) {
-                Some(edge) => edges.push(*edge),
-                None => {}
+            if let Some(&edge) = ereplace.get(edge) {
+                edges.push(edge);
             }
         }
 
@@ -43,7 +40,7 @@ impl SubGraph {
         }
     }
 
-    pub fn to_dot(&self, indent: usize, nodes: &Vec<Node>, edges: &Vec<Edge>) -> String {
+    pub fn to_dot(&self, indent: usize, nodes: &[Node], edges: &[Edge]) -> String {
         let tabs = "\t".repeat(indent);
         let mut dot = String::from("");
 
@@ -57,13 +54,13 @@ impl SubGraph {
             dot.push_str(&subgraph.to_dot(indent + 1, nodes, edges));
         }
 
-        for node in &self.nodes {
-            let node = &nodes[*node];
+        for &node in &self.nodes {
+            let node = &nodes[node];
             dot.push_str(&format!("{}{}\n", tabs, &node.to_dot(indent + 1)));
         }
 
-        for edge in &self.edges {
-            let edge = &edges[*edge];
+        for &edge in &self.edges {
+            let edge = &edges[edge];
             dot.push_str(&format!("{}{}\n", tabs, &edge.to_dot(indent + 1)));
         }
 
