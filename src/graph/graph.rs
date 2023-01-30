@@ -147,7 +147,7 @@ impl Graph {
         .unwrap_or_default()
     }
 
-    fn topsort(nodes: Vec<Node>, edges: &Vec<Edge>) -> Vec<Node> {
+    fn topsort(nodes: Vec<Node>, edges: &[Edge]) -> Vec<Node> {
         let lookup = Self::get_nlookup(&nodes);
         let (fwdmap, bwdmap) = Self::get_edgemaps(edges, &lookup);
 
@@ -183,19 +183,19 @@ impl Graph {
         sorted
     }
 
-    fn get_nlookup(nodes: &Vec<Node>) -> BiMap<String, usize> {
+    fn get_nlookup(nodes: &[Node]) -> BiMap<String, usize> {
         (nodes.iter().enumerate())
             .map(|(idx, node)| (node.id.clone(), idx))
             .collect()
     }
 
-    fn get_elookup(edges: &Vec<Edge>) -> BiMap<(String, String), usize> {
+    fn get_elookup(edges: &[Edge]) -> BiMap<(String, String), usize> {
         (edges.iter().enumerate())
             .map(|(idx, edge)| ((edge.from.clone(), edge.to.clone()), idx))
             .collect()
     }
 
-    fn get_edgemaps(edges: &Vec<Edge>, lookup: &BiMap<String, usize>) -> (EdgeMap, EdgeMap) {
+    fn get_edgemaps(edges: &[Edge], lookup: &BiMap<String, usize>) -> (EdgeMap, EdgeMap) {
         let mut fwdmap = EdgeMap::new();
         let mut bwdmap = EdgeMap::new();
 
