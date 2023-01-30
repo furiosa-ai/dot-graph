@@ -1,5 +1,6 @@
+use crate::DotGraphError;
 use crate::graphviz::{
-    agfstnode, agfstout, agfstsubg, agget, agnameof, agnxtattr, agnxtnode, agnxtout, agnxtsubg,
+    agfstnode, agfstout, agfstsubg, agget, agisdirected, agnameof, agnxtattr, agnxtnode, agnxtout, agnxtsubg,
     agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
 use crate::{
@@ -18,14 +19,21 @@ unsafe fn c_to_rust_string(ptr: *const i8) -> String {
     String::from_utf8_lossy(CStr::from_ptr(ptr).to_bytes()).to_string()
 }
 
-pub fn parse(path: &str) -> Graph {
-    let path = CString::new(path).unwrap();
-    let option = CString::new("r").unwrap();
+pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
+    let cpath = CString::new(path).unwrap();
+    let coption = CString::new("r").unwrap();
     unsafe {
-        let fp = fopen(path.as_ptr(), option.as_ptr());
+        let fp = fopen(cpath.as_ptr(), coption.as_ptr());
 
         let graph = agread(fp as _, 0 as _);
-        parse_graph(graph)
+        if graph.is_null() {
+            return Err(DotGraphError::Invalid(String::from(path)));
+        }
+        if agisdirected(graph) == 0 {
+            return Err(DotGraphError::UnDiGraph(String::from(path)));
+        }
+
+        Ok(parse_graph(graph))
     }
 }
 
