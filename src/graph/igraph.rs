@@ -1,5 +1,18 @@
-use crate::structs::{IGraph, SubGraph};
 use bimap::BiMap;
+use crate::{
+    edge::edge::Edge,
+    node::node::Node,
+    graph::subgraph::SubGraph,
+};
+
+#[derive(Debug, Clone)]
+pub struct IGraph {
+    pub id: String,
+    pub subgraphs: Vec<Box<IGraph>>,
+
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
+}
 
 impl IGraph {
     pub fn encode(

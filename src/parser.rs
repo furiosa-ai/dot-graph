@@ -2,7 +2,14 @@ use crate::graphviz::{
     agfstnode, agfstout, agfstsubg, agget, agnameof, agnxtattr, agnxtnode, agnxtout, agnxtsubg,
     agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
-use crate::structs::{Edge, Graph, IGraph, Node};
+use crate::{
+    edge::edge::Edge,
+    graph::{
+        igraph::IGraph,
+        graph::Graph,
+    },
+    node::node::Node,
+};
 use std::boxed::Box;
 use std::collections::{BTreeMap, HashSet};
 use std::ffi::{CStr, CString};

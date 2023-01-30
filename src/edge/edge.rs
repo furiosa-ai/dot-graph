@@ -1,4 +1,13 @@
-use crate::structs::Edge;
+use std::collections::{BTreeMap, HashMap, HashSet};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Edge {
+    pub from: String,
+    pub to: String,
+    pub attrs: BTreeMap<String, String>,
+}
+
+pub type EdgeMap = HashMap<usize, HashSet<usize>>;
 
 impl Edge {
     pub fn to_dot(&self, indent: usize) -> String {

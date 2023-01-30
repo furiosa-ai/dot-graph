@@ -1,6 +1,27 @@
-use crate::structs::{Edge, EdgeMap, Graph, IGraph, Node};
 use bimap::BiMap;
+use crate::{ 
+    edge::edge::{Edge, EdgeMap},
+    graph::{
+        igraph::IGraph,
+        subgraph::SubGraph,
+    },
+    node::node::Node,
+};
 use std::collections::{HashMap, HashSet, VecDeque};
+
+#[derive(Debug, Clone)]
+pub struct Graph {
+    pub id: String,
+    pub root: SubGraph,
+
+    pub nodes: Vec<Node>,
+    pub nlookup: BiMap<String, usize>,
+
+    pub edges: Vec<Edge>,
+    pub elookup: BiMap<(String, String), usize>,
+    pub fwdmap: EdgeMap,
+    pub bwdmap: EdgeMap,
+}
 
 impl Graph {
     pub fn new(id: String, root: IGraph, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {

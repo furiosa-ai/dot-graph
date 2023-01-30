@@ -1,5 +1,18 @@
-use crate::structs::{Edge, Node, SubGraph};
+use crate::{
+    edge::edge::Edge,
+    node::node::Node,
+};
 use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
+pub struct SubGraph {
+    pub id: String,
+
+    pub subgraphs: Vec<Box<SubGraph>>,
+
+    pub nodes: Vec<usize>,
+    pub edges: Vec<usize>,
+}
 
 impl SubGraph {
     pub fn extract(
