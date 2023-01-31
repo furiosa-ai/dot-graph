@@ -1,12 +1,10 @@
-use bimap::BiMap;
-use crate::{ 
+use crate::{
     edge::edge::{Edge, EdgeMap},
-    graph::{
-        igraph::IGraph,
-        subgraph::SubGraph,
-    },
+    graph::{igraph::IGraph, subgraph::SubGraph},
     node::node::Node,
 };
+use bimap::BiMap;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone)]
@@ -25,7 +23,7 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(id: String, root: IGraph, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
-        let nodes = Self::topsort(nodes, &edges); 
+        let nodes = Self::topsort(nodes, &edges);
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
@@ -44,12 +42,18 @@ impl Graph {
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let mut nodes = HashSet::new();
-        for (idx, node) in self.nodes.iter().enumerate() {
-            if node.id.starts_with(prefix) {
-                nodes.insert(idx);
-            }
-        }
+        let nodes: HashSet<usize> = self
+            .nodes
+            .par_iter()
+            .enumerate()
+            .filter_map(|(idx, node)| {
+                if node.id.starts_with(prefix) {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         self.extract(nodes)
     }
@@ -132,7 +136,7 @@ impl Graph {
                     .map(|&idx| self.nodes[idx].id.as_str())
                     .collect()
             })
-        .unwrap_or_default()
+            .unwrap_or_default()
     }
 
     pub fn tos(&self, id: &str) -> HashSet<&str> {
@@ -144,7 +148,7 @@ impl Graph {
                     .map(|&idx| self.nodes[idx].id.as_str())
                     .collect()
             })
-        .unwrap_or_default()
+            .unwrap_or_default()
     }
 
     fn topsort(nodes: Vec<Node>, edges: &[Edge]) -> Vec<Node> {
@@ -163,15 +167,15 @@ impl Graph {
             queue.push_back(node);
             visited.insert(node);
         }
-        
+
         let mut sorted = Vec::new();
         while let Some(node) = queue.pop_front() {
             sorted.push(nodes[node].clone());
             if let Some(tos) = fwdmap.get(&node) {
                 for to in tos {
-                    if let Some(0) = (indegrees.get_mut(to)).and_then(|i| {
+                    if let Some(0) = (indegrees.get_mut(to)).map(|i| {
                         *i -= 1;
-                        Some(i)
+                        i
                     }) {
                         queue.push_back(*to);
                         visited.insert(*to);

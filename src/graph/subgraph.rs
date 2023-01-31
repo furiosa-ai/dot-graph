@@ -1,7 +1,5 @@
-use crate::{
-    edge::edge::Edge,
-    node::node::Node,
-};
+use crate::{edge::edge::Edge, node::node::Node};
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -20,26 +18,35 @@ impl SubGraph {
         nreplace: &HashMap<usize, usize>,
         ereplace: &HashMap<usize, usize>,
     ) -> Option<SubGraph> {
-        let mut subgraphs = Vec::new();
-        for subgraph in &self.subgraphs {
-            if let Some(subgraph) = subgraph.extract(nreplace, ereplace) {
-                subgraphs.push(Box::new(subgraph));
-            }
-        }
+        let subgraphs: Vec<Box<SubGraph>> = self
+            .subgraphs
+            .par_iter()
+            .filter_map(|subgraph| subgraph.extract(nreplace, ereplace).map(Box::new))
+            .collect();
 
-        let mut nodes = Vec::new();
-        for node in &self.nodes {
-            if let Some(&node) = nreplace.get(node) {
-                nodes.push(node);
-            }
-        }
+        let nodes: Vec<usize> = self
+            .nodes
+            .par_iter()
+            .filter_map(|node| {
+                if let Some(&node) = nreplace.get(node) {
+                    Some(node)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-        let mut edges = Vec::new();
-        for edge in &self.edges {
-            if let Some(&edge) = ereplace.get(edge) {
-                edges.push(edge);
-            }
-        }
+        let edges: Vec<usize> = self
+            .edges
+            .par_iter()
+            .filter_map(|edge| {
+                if let Some(&edge) = ereplace.get(edge) {
+                    Some(edge)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         if subgraphs.is_empty() && nodes.is_empty() && edges.is_empty() {
             None
