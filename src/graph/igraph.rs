@@ -1,9 +1,5 @@
+use crate::{edge::edge::Edge, graph::subgraph::SubGraph, node::node::Node};
 use bimap::BiMap;
-use crate::{
-    edge::edge::Edge,
-    node::node::Node,
-    graph::subgraph::SubGraph,
-};
 use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -30,7 +26,7 @@ impl IGraph {
             .cloned()
             .collect();
 
-        let edges: Vec<usize> = (self.edges.par_iter()) 
+        let edges: Vec<usize> = (self.edges.par_iter())
             .map(|edge| {
                 elookup
                     .get_by_left(&(edge.from.clone(), edge.to.clone()))

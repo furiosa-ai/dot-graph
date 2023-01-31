@@ -1,7 +1,4 @@
-use crate::{
-    edge::edge::Edge,
-    node::node::Node,
-};
+use crate::{edge::edge::Edge, node::node::Node};
 use rayon::prelude::*;
 use std::collections::HashMap;
 
@@ -21,27 +18,33 @@ impl SubGraph {
         nreplace: &HashMap<usize, usize>,
         ereplace: &HashMap<usize, usize>,
     ) -> Option<SubGraph> {
-        let subgraphs: Vec<Box<SubGraph>> = self.subgraphs.par_iter()
-            .filter_map(|subgraph| if let Some(subgraph) = subgraph.extract(nreplace, ereplace) {
-                Some(Box::new(subgraph))
-            } else {
-                None
+        let subgraphs: Vec<Box<SubGraph>> = self
+            .subgraphs
+            .par_iter()
+            .filter_map(|subgraph| subgraph.extract(nreplace, ereplace).map(Box::new))
+            .collect();
+
+        let nodes: Vec<usize> = self
+            .nodes
+            .par_iter()
+            .filter_map(|node| {
+                if let Some(&node) = nreplace.get(node) {
+                    Some(node)
+                } else {
+                    None
+                }
             })
             .collect();
 
-        let nodes: Vec<usize> = self.nodes.par_iter() 
-            .filter_map(|node| if let Some(&node) = nreplace.get(node) {
-                Some(node)
-            } else {
-                None
-            })
-            .collect();
-
-        let edges: Vec<usize> = self.edges.par_iter() 
-            .filter_map(|edge| if let Some(&edge) = ereplace.get(edge) {
-                Some(edge)
-            } else {
-                None
+        let edges: Vec<usize> = self
+            .edges
+            .par_iter()
+            .filter_map(|edge| {
+                if let Some(&edge) = ereplace.get(edge) {
+                    Some(edge)
+                } else {
+                    None
+                }
             })
             .collect();
 

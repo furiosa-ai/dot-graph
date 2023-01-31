@@ -1,14 +1,11 @@
-use crate::DotGraphError;
 use crate::graphviz::{
-    agfstnode, agfstout, agfstsubg, agget, agisdirected, agnameof, agnxtattr, agnxtnode, agnxtout, agnxtsubg,
-    agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
+    agfstnode, agfstout, agfstsubg, agget, agisdirected, agnameof, agnxtattr, agnxtnode, agnxtout,
+    agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
+use crate::DotGraphError;
 use crate::{
     edge::edge::Edge,
-    graph::{
-        igraph::IGraph,
-        graph::Graph,
-    },
+    graph::{graph::Graph, igraph::IGraph},
     node::node::Node,
 };
 use std::boxed::Box;
@@ -139,7 +136,7 @@ pub fn parse_node(
     unsafe {
         let mut edge = agfstout(graph, node);
         while !edge.is_null() {
-            let e = parse_edge(edge, node, &ekeys);
+            let e = parse_edge(edge, node, ekeys);
             edges.push(e);
 
             edge = agnxtout(graph, edge);
