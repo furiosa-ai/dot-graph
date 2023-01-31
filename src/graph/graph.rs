@@ -7,6 +7,7 @@ use crate::{
     },
     node::node::Node,
 };
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone)]
@@ -44,12 +45,14 @@ impl Graph {
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let mut nodes = HashSet::new();
-        for (idx, node) in self.nodes.iter().enumerate() {
-            if node.id.starts_with(prefix) {
-                nodes.insert(idx);
-            }
-        }
+        let nodes: HashSet<usize> = self.nodes.par_iter()
+            .enumerate()
+            .filter_map(|(idx, node)| if node.id.starts_with(prefix) {
+                Some(idx)
+            } else {
+                None
+            })
+            .collect();
 
         self.extract(nodes)
     }

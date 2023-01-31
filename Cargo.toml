@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bimap = "0.6.2"
 thiserror = "1.0.38"
+rayon = "1.6.1"
 
 [build-dependencies]
 bindgen = "0.59.1"
