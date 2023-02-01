@@ -39,9 +39,12 @@ It is required that [Graphviz is installed (compiled)](https://graphviz.org/down
 
 ```rust
 use dot_graph::parser::parse;
+use dot_graph::DotGraphError;
 
-fn main() {
-  let graph = parse(/* path */);
+fn main() -> Result<(), DotGraphError> {
+  let graph = parse(/* path */)?;
   println!("{}", graph.to_dot());
+  
+  Ok(())
 }
 ```
