@@ -11,6 +11,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 pub struct Graph {
     pub id: String,
 
+    pub subtree: HashMap<usize, Vec<usize>>,
+
     pub subgraphs: Vec<SubGraph>,
     pub slookup: BiMap<String, usize>,
     
@@ -31,9 +33,11 @@ impl Graph {
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
         let subgraphs = igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
+        let subtree = Self::get_subtree(&subgraphs);
 
         Graph {
             id,
+            subtree,
             subgraphs,
             slookup,
             nodes,
@@ -43,18 +47,6 @@ impl Graph {
             fwdmap,
             bwdmap,
         }
-    }
-
-    pub fn subtree(&self) -> HashMap<usize, Vec<usize>> {
-        let mut subtree = HashMap::new();
-
-        for (idx, subgraph) in self.subgraphs.iter().enumerate() {
-            if !subgraph.subgraphs.is_empty() {
-                subtree.insert(idx, subgraph.subgraphs.clone());
-            }
-        }
-
-        subtree
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
@@ -151,13 +143,15 @@ impl Graph {
 
         let subgraphs: Vec<SubGraph> = subgraphs.par_iter().filter_map(|subgraph| subgraph.extract_subgraph(&sreplace)).collect();
 
+        let subtree = Self::get_subtree(&subgraphs);
         let slookup = Self::get_slookup(&subgraphs);
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
-        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
+        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup); 
 
         Some(Graph {
             id: self.id.clone(),
+            subtree,
             subgraphs,
             slookup,
             nodes,
@@ -274,6 +268,20 @@ impl Graph {
 
         (fwdmap, bwdmap)
     }
+
+    pub fn get_subtree(subgraphs: &Vec<SubGraph>) -> HashMap<usize, Vec<usize>> {
+        let mut subtree = HashMap::new();
+
+        for (idx, subgraph) in subgraphs.iter().enumerate() {
+            if !subgraph.subgraphs.is_empty() {
+                subtree.insert(idx, subgraph.subgraphs.clone());
+            }
+        }
+
+        subtree
+    }
+
+
 
     pub fn to_dot(&self) -> String {
         let root = self.subgraphs.last().unwrap();
