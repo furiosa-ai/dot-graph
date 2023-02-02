@@ -67,7 +67,7 @@ impl SubGraph {
             })
             .collect();
 
-        if subgraphs.is_empty() {
+        if subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty() {
             None
         } else {
             Some(SubGraph {

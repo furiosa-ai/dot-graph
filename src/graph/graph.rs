@@ -130,14 +130,24 @@ impl Graph {
             }
         }
 
+        for (idx, subgraph) in subgraphs.iter().enumerate() {
+            println!("{} {:?} {:?}", subgraph.id, subgraph.subgraphs, empty.contains(&idx));
+        } 
+
         let mut sreplace = HashMap::new();
         for idx in 0..subgraphs.len() {
             if !empty.contains(&idx) {
-                sreplace.insert(idx, sreplace.len() - 1);
+                sreplace.insert(idx, sreplace.len());
             }        
         }
 
         let subgraphs: Vec<SubGraph> = subgraphs.par_iter().filter_map(|subgraph| subgraph.extract_subgraph(&sreplace)).collect();
+
+        println!("sreplace {:?}", sreplace);
+        println!("AFTER");
+        for subgraph in &subgraphs {
+            println!("{} {:?}", subgraph.id, subgraph.subgraphs);
+        }
 
         let slookup = Self::get_slookup(&subgraphs);
         let nlookup = Self::get_nlookup(&nodes);
