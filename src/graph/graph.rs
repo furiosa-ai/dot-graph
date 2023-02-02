@@ -10,8 +10,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 #[derive(Debug, Clone)]
 pub struct Graph {
     pub id: String,
-    pub root: SubGraph,
 
+    pub subgraphs: Vec<SubGraph>,
+    pub slookup: BiMap<String, usize>,
+    
     pub nodes: Vec<Node>,
     pub nlookup: BiMap<String, usize>,
 
@@ -22,16 +24,18 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(id: String, root: IGraph, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
+    pub fn new(id: String, igraphs: Vec<IGraph>, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
         let nodes = Self::topsort(nodes, &edges);
+        let slookup = Self::get_ilookup(&igraphs);
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
-        let root = root.encode(&nlookup, &elookup);
+        let subgraphs = igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
 
         Graph {
             id,
-            root,
+            subgraphs,
+            slookup,
             nodes,
             nlookup,
             edges,
@@ -84,6 +88,10 @@ impl Graph {
     }
 
     pub fn extract(&self, extract: HashSet<usize>) -> Option<Graph> {
+        if extract.is_empty() {
+            return None;
+        }
+
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
         for (idx, node) in self.nodes.iter().enumerate() {
@@ -105,21 +113,47 @@ impl Graph {
             }
         }
 
-        self.root.extract(&nreplace, &ereplace).map(|root| {
-            let nlookup = Self::get_nlookup(&nodes);
-            let elookup = Self::get_elookup(&edges);
-            let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
+        let subgraphs: Vec<SubGraph> = self.subgraphs.par_iter().map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace)).collect();
+        let mut empty: HashSet<usize> = HashSet::new();
+        loop {
+            let before = empty.len();
 
-            Graph {
-                id: self.id.clone(),
-                root,
-                nodes,
-                nlookup,
-                edges,
-                elookup,
-                fwdmap,
-                bwdmap,
+            empty = subgraphs.par_iter().enumerate().filter_map(|(idx, subgraph)| if subgraph.is_empty(&empty) {
+                Some(idx)
+            } else {
+                None
+            }).collect();
+
+            let after = empty.len();
+            if before == after {
+                break;
             }
+        }
+
+        let mut sreplace = HashMap::new();
+        for idx in 0..subgraphs.len() {
+            if !empty.contains(&idx) {
+                sreplace.insert(idx, sreplace.len() - 1);
+            }        
+        }
+
+        let subgraphs: Vec<SubGraph> = subgraphs.par_iter().filter_map(|subgraph| subgraph.extract_subgraph(&sreplace)).collect();
+
+        let slookup = Self::get_slookup(&subgraphs);
+        let nlookup = Self::get_nlookup(&nodes);
+        let elookup = Self::get_elookup(&edges);
+        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
+
+        Some(Graph {
+            id: self.id.clone(),
+            subgraphs,
+            slookup,
+            nodes,
+            nlookup,
+            edges,
+            elookup,
+            fwdmap,
+            bwdmap,
         })
     }
 
@@ -187,6 +221,18 @@ impl Graph {
         sorted
     }
 
+    fn get_ilookup(subgraphs: &[IGraph]) -> BiMap<String, usize> {
+        (subgraphs.iter().enumerate())
+            .map(|(idx, subgraph)| (subgraph.id.clone(), idx))
+            .collect()
+    }
+
+    fn get_slookup(subgraphs: &[SubGraph]) -> BiMap<String, usize> {
+        (subgraphs.iter().enumerate())
+            .map(|(idx, subgraph)| (subgraph.id.clone(), idx))
+            .collect()
+    }
+
     fn get_nlookup(nodes: &[Node]) -> BiMap<String, usize> {
         (nodes.iter().enumerate())
             .map(|(idx, node)| (node.id.clone(), idx))
@@ -218,6 +264,8 @@ impl Graph {
     }
 
     pub fn to_dot(&self) -> String {
-        self.root.to_dot(0, &self.nodes, &self.edges)
+        let root = self.subgraphs.last().unwrap();
+
+        root.to_dot(0, &self.subgraphs, &self.nodes, &self.edges)
     }
 }

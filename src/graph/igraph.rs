@@ -5,8 +5,7 @@ use rayon::prelude::*;
 #[derive(Debug, Clone)]
 pub struct IGraph {
     pub id: String,
-    pub subgraphs: Vec<Box<IGraph>>,
-
+    pub subgraphs: Vec<String>,
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
 }
@@ -14,11 +13,13 @@ pub struct IGraph {
 impl IGraph {
     pub fn encode(
         &self,
+        slookup: &BiMap<String, usize>,
         nlookup: &BiMap<String, usize>,
         elookup: &BiMap<(String, String), usize>,
     ) -> SubGraph {
-        let subgraphs: Vec<Box<SubGraph>> = (self.subgraphs.par_iter())
-            .map(|subgraph| Box::new(subgraph.encode(nlookup, elookup)))
+        let subgraphs: Vec<usize> = (self.subgraphs.par_iter())
+            .map(|subgraph| slookup.get_by_left(subgraph).unwrap())
+            .cloned()
             .collect();
 
         let nodes: Vec<usize> = (self.nodes.par_iter())
