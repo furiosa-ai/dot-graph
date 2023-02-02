@@ -45,6 +45,18 @@ impl Graph {
         }
     }
 
+    pub fn subtree(&self) -> HashMap<usize, Vec<usize>> {
+        let mut subtree = HashMap::new();
+
+        for (idx, subgraph) in self.subgraphs.iter().enumerate() {
+            if !subgraph.subgraphs.is_empty() {
+                subtree.insert(idx, subgraph.subgraphs.clone());
+            }
+        }
+
+        subtree
+    }
+
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
         let nodes: HashSet<usize> = self
             .nodes
