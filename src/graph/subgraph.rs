@@ -17,6 +17,18 @@ impl SubGraph {
         subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty()
     }
 
+    pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<usize> {
+        let nodes = self.subgraphs.iter().map(|&subgraph| {
+            let subgraph = &subgraphs[subgraph];
+            subgraph.collect(subgraphs)
+        })
+        .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
+
+        let nodes = nodes.union(&HashSet::from_iter(self.nodes.clone())).cloned().collect();
+
+        nodes
+    }
+
     pub fn extract_nodes(
         &self,
         nreplace: &HashMap<usize, usize>,
@@ -84,7 +96,7 @@ impl SubGraph {
         let mut dot = String::from("");
 
         if indent == 0 {
-            dot.push_str(&format!("{}digraph DAG {{\n", tabs));
+            dot.push_str(&format!("{}digraph {} {{\n", tabs, self.id));
         } else {
             dot.push_str(&format!("{}subgraph {} {{\n", tabs, self.id));
         }

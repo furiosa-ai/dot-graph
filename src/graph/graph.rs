@@ -91,6 +91,13 @@ impl Graph {
         self.extract(visited)
     }
 
+    pub fn subgraph(&self, root: usize) -> Option<Graph> {
+        let root = &self.subgraphs[root];
+        let nodes = root.collect(&self.subgraphs);
+
+        self.extract(nodes)
+    }
+
     pub fn extract(&self, extract: HashSet<usize>) -> Option<Graph> {
         if extract.is_empty() {
             return None;
