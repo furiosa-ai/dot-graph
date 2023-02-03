@@ -1,6 +1,6 @@
 use crate::{edge::edge::Edge, node::node::Node};
 use rayon::prelude::*;
-use std::collections::{ HashMap, HashSet };
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct SubGraph {
@@ -12,19 +12,32 @@ pub struct SubGraph {
 
 impl SubGraph {
     pub fn is_empty(&self, empty: &HashSet<usize>) -> bool {
-        let subgraphs: Vec<usize> = self.subgraphs.par_iter().filter(|subgraph| !empty.contains(subgraph)).cloned().collect();
+        let subgraphs: Vec<usize> = self
+            .subgraphs
+            .par_iter()
+            .filter(|subgraph| !empty.contains(subgraph))
+            .cloned()
+            .collect();
 
         subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty()
     }
 
     pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<usize> {
-        let nodes = self.subgraphs.iter().map(|&subgraph| {
-            let subgraph = &subgraphs[subgraph];
-            subgraph.collect(subgraphs)
-        })
-        .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
+        let nodes = self
+            .subgraphs
+            .iter()
+            .map(|&subgraph| {
+                let subgraph = &subgraphs[subgraph];
+                subgraph.collect(subgraphs)
+            })
+            .fold(HashSet::new(), |acc, nodes| {
+                acc.union(&nodes).cloned().collect()
+            });
 
-        let nodes = nodes.union(&HashSet::from_iter(self.nodes.clone())).cloned().collect();
+        let nodes = nodes
+            .union(&HashSet::from_iter(self.nodes.clone()))
+            .cloned()
+            .collect();
 
         nodes
     }
@@ -91,7 +104,13 @@ impl SubGraph {
         }
     }
 
-    pub fn to_dot(&self, indent: usize, subgraphs: &[SubGraph], nodes: &[Node], edges: &[Edge]) -> String {
+    pub fn to_dot(
+        &self,
+        indent: usize,
+        subgraphs: &[SubGraph],
+        nodes: &[Node],
+        edges: &[Edge],
+    ) -> String {
         let tabs = "\t".repeat(indent);
         let mut dot = String::from("");
 

@@ -15,7 +15,7 @@ pub struct Graph {
 
     pub subgraphs: Vec<SubGraph>,
     pub slookup: BiMap<String, usize>,
-    
+
     pub nodes: Vec<Node>,
     pub nlookup: BiMap<String, usize>,
 
@@ -32,7 +32,10 @@ impl Graph {
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
-        let subgraphs = igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
+        let subgraphs = igraphs
+            .par_iter()
+            .map(|igraph| igraph.encode(&slookup, &nlookup, &elookup))
+            .collect();
         let subtree = Self::get_subtree(&subgraphs);
 
         Graph {
@@ -125,16 +128,26 @@ impl Graph {
             }
         }
 
-        let subgraphs: Vec<SubGraph> = self.subgraphs.par_iter().map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace)).collect();
+        let subgraphs: Vec<SubGraph> = self
+            .subgraphs
+            .par_iter()
+            .map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace))
+            .collect();
         let mut empty: HashSet<usize> = HashSet::new();
         loop {
             let before = empty.len();
 
-            empty = subgraphs.par_iter().enumerate().filter_map(|(idx, subgraph)| if subgraph.is_empty(&empty) {
-                Some(idx)
-            } else {
-                None
-            }).collect();
+            empty = subgraphs
+                .par_iter()
+                .enumerate()
+                .filter_map(|(idx, subgraph)| {
+                    if subgraph.is_empty(&empty) {
+                        Some(idx)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
             let after = empty.len();
             if before == after {
@@ -146,16 +159,19 @@ impl Graph {
         for idx in 0..subgraphs.len() {
             if !empty.contains(&idx) {
                 sreplace.insert(idx, sreplace.len());
-            }        
+            }
         }
 
-        let subgraphs: Vec<SubGraph> = subgraphs.par_iter().filter_map(|subgraph| subgraph.extract_subgraph(&sreplace)).collect();
+        let subgraphs: Vec<SubGraph> = subgraphs
+            .par_iter()
+            .filter_map(|subgraph| subgraph.extract_subgraph(&sreplace))
+            .collect();
 
         let subtree = Self::get_subtree(&subgraphs);
         let slookup = Self::get_slookup(&subgraphs);
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
-        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup); 
+        let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
 
         Some(Graph {
             id: self.id.clone(),
@@ -288,8 +304,6 @@ impl Graph {
 
         subtree
     }
-
-
 
     pub fn to_dot(&self) -> String {
         let root = self.subgraphs.last().unwrap();
