@@ -8,7 +8,6 @@ use crate::{
     graph::{graph::Graph, igraph::IGraph},
     node::node::Node,
 };
-use std::boxed::Box;
 use std::collections::{BTreeMap, HashSet};
 use std::ffi::{CStr, CString};
 
@@ -37,18 +36,20 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
 pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
     let id = parse_name(graph as _);
 
+    let mut subgraphs = Vec::new();
     let mut nodes = HashSet::new();
     let mut edges = HashSet::new();
-    let root = parse_igraph(graph, &mut nodes, &mut edges);
+    parse_igraph(graph, &mut subgraphs, &mut nodes, &mut edges);
 
-    Graph::new(id, root, Vec::from_iter(nodes), Vec::from_iter(edges))
+    Graph::new(id, subgraphs, Vec::from_iter(nodes), Vec::from_iter(edges))
 }
 
 pub fn parse_igraph(
     graph: *mut Agraph_s,
+    subgraphs_visited: &mut Vec<IGraph>,
     nodes_visited: &mut HashSet<Node>,
     edges_visited: &mut HashSet<Edge>,
-) -> IGraph {
+) {
     let id = parse_name(graph as _);
 
     // parse subgraphs
@@ -56,9 +57,8 @@ pub fn parse_igraph(
     unsafe {
         let mut subgraph = agfstsubg(graph);
         while !subgraph.is_null() {
-            let graph = parse_igraph(subgraph, nodes_visited, edges_visited);
-
-            subgraphs.push(Box::new(graph));
+            parse_igraph(subgraph, subgraphs_visited, nodes_visited, edges_visited);
+            subgraphs.push(subgraphs_visited.last().unwrap().id.clone());
             subgraph = agnxtsubg(subgraph);
         }
     };
@@ -105,12 +105,14 @@ pub fn parse_igraph(
         }
     };
 
-    IGraph {
+    let subgraph = IGraph {
         id,
         subgraphs,
         nodes,
         edges,
-    }
+    };
+
+    subgraphs_visited.push(subgraph);
 }
 
 pub fn parse_node(
