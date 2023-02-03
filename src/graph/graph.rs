@@ -91,7 +91,8 @@ impl Graph {
         self.extract(visited)
     }
 
-    pub fn subgraph(&self, root: usize) -> Option<Graph> {
+    pub fn subgraph(&self, root: &str) -> Option<Graph> {
+        let &root = self.slookup.get_by_left(root).unwrap();
         let root = &self.subgraphs[root];
         let nodes = root.collect(&self.subgraphs);
 
