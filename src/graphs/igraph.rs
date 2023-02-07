@@ -21,21 +21,23 @@ impl IGraph {
         nlookup: &BiMap<String, NodeIndex>,
         elookup: &BiMap<(String, String), EdgeIndex>,
     ) -> SubGraph {
-        let subgraphs: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
+        let id = self.id.clone();
+
+        let subgraph_idxs: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
             .map(|subgraph| slookup.get_by_left(subgraph).unwrap())
             .cloned()
             .collect();
 
-        let nodes: Vec<NodeIndex> = (self.nodes.par_iter())
+        let node_idxs: Vec<NodeIndex> = (self.nodes.par_iter())
             .map(|node| nlookup.get_by_left(&node.id).unwrap())
             .cloned()
             .collect();
 
-        let edges: Vec<EdgeIndex> = (self.edges.par_iter())
+        let edge_idxs: Vec<EdgeIndex> = (self.edges.par_iter())
             .map(|edge| elookup.get_by_left(&(edge.from.clone(), edge.to.clone())).unwrap())
             .cloned()
             .collect();
 
-        SubGraph { id: self.id.clone(), subgraphs, nodes, edges }
+        SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
     }
 }

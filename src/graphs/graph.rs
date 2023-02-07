@@ -12,11 +12,13 @@ type SubGraphIndex = usize;
 type NodeIndex = usize;
 type EdgeIndex = usize;
 
+pub type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
+
 #[derive(Debug, Clone)]
 pub struct Graph {
     pub id: String,
 
-    pub subtree: HashMap<SubGraphIndex, Vec<SubGraphIndex>>,
+    pub subtree: SubTree,
 
     pub subgraphs: Vec<SubGraph>,
     pub slookup: BiMap<String, SubGraphIndex>,
@@ -269,12 +271,12 @@ fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<String, NodeIndex>) -> (EdgeMa
     (fwdmap, bwdmap)
 }
 
-fn make_subtree(subgraphs: &[SubGraph]) -> HashMap<SubGraphIndex, Vec<SubGraphIndex>> {
+fn make_subtree(subgraphs: &[SubGraph]) -> SubTree {
     let mut subtree = HashMap::new();
 
     for (idx, subgraph) in subgraphs.iter().enumerate() {
-        if !subgraph.subgraphs.is_empty() {
-            subtree.insert(idx, subgraph.subgraphs.clone());
+        if !subgraph.subgraph_idxs.is_empty() {
+            subtree.insert(idx, subgraph.subgraph_idxs.clone());
         }
     }
 
