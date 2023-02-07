@@ -31,8 +31,8 @@ impl SubGraph {
         let node_idxs = self
             .subgraph_idxs
             .iter()
-            .map(|&subgraph| {
-                let subgraph = &subgraphs[subgraph];
+            .map(|&idx| {
+                let subgraph = &subgraphs[idx];
                 subgraph.collect(subgraphs)
             })
             .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());

@@ -33,17 +33,16 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
-        let nlookup = make_nlookup(nodes);
+        let nodes = topsort(nodes, edges);
+        let nlookup = make_nlookup(&nodes);
+
         let elookup = make_elookup(edges);
-        let slookup = make_ilookup(igraphs);
-
-        let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup);
-
-        let nodes = topsort(nodes, &fwdmap, &bwdmap);
+        let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup); 
         let edges = Vec::from(edges);
+        
+        let slookup = make_ilookup(igraphs);
         let subgraphs: Vec<SubGraph> =
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
-
         let subtree = make_subtree(&subgraphs);
 
         Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
@@ -213,9 +212,12 @@ impl Graph {
     }
 }
 
-fn topsort(nodes: &[Node], fwdmap: &EdgeMap, bwdmap: &EdgeMap) -> Vec<Node> {
+fn topsort(nodes: &[Node], edges: &[Edge]) -> Vec<Node> {
+    let nlookup = make_nlookup(nodes);
+    let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup);
+
     let mut indegrees: HashMap<NodeIndex, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
-    for (&to, froms) in bwdmap {
+    for (&to, froms) in &bwdmap {
         indegrees.insert(to, froms.len());
     }
 
