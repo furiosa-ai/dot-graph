@@ -2,6 +2,10 @@ use crate::{edge::Edge, graphs::subgraph::SubGraph, node::Node};
 use bimap::BiMap;
 use rayon::prelude::*;
 
+type SubGraphIndex = usize;
+type NodeIndex = usize;
+type EdgeIndex = usize;
+
 #[derive(Debug, Clone)]
 pub struct IGraph {
     pub id: String,
@@ -13,21 +17,21 @@ pub struct IGraph {
 impl IGraph {
     pub fn encode(
         &self,
-        slookup: &BiMap<String, usize>,
-        nlookup: &BiMap<String, usize>,
-        elookup: &BiMap<(String, String), usize>,
+        slookup: &BiMap<String, SubGraphIndex>,
+        nlookup: &BiMap<String, NodeIndex>,
+        elookup: &BiMap<(String, String), EdgeIndex>,
     ) -> SubGraph {
-        let subgraphs: Vec<usize> = (self.subgraphs.par_iter())
+        let subgraphs: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
             .map(|subgraph| slookup.get_by_left(subgraph).unwrap())
             .cloned()
             .collect();
 
-        let nodes: Vec<usize> = (self.nodes.par_iter())
+        let nodes: Vec<NodeIndex> = (self.nodes.par_iter())
             .map(|node| nlookup.get_by_left(&node.id).unwrap())
             .cloned()
             .collect();
 
-        let edges: Vec<usize> = (self.edges.par_iter())
+        let edges: Vec<EdgeIndex> = (self.edges.par_iter())
             .map(|edge| elookup.get_by_left(&(edge.from.clone(), edge.to.clone())).unwrap())
             .cloned()
             .collect();

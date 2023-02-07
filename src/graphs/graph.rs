@@ -7,20 +7,25 @@ use bimap::BiMap;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
+type IGraphIndex = usize;
+type SubGraphIndex = usize;
+type NodeIndex = usize;
+type EdgeIndex = usize;
+
 #[derive(Debug, Clone)]
 pub struct Graph {
     pub id: String,
 
-    pub subtree: HashMap<usize, Vec<usize>>,
+    pub subtree: HashMap<SubGraphIndex, Vec<SubGraphIndex>>,
 
     pub subgraphs: Vec<SubGraph>,
-    pub slookup: BiMap<String, usize>,
+    pub slookup: BiMap<String, SubGraphIndex>,
 
     pub nodes: Vec<Node>,
-    pub nlookup: BiMap<String, usize>,
+    pub nlookup: BiMap<String, NodeIndex>,
 
     pub edges: Vec<Edge>,
-    pub elookup: BiMap<(String, String), usize>,
+    pub elookup: BiMap<(String, String), EdgeIndex>,
     pub fwdmap: EdgeMap,
     pub bwdmap: EdgeMap,
 }
@@ -40,21 +45,21 @@ impl Graph {
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let nodes: HashSet<usize> = self
+        let node_idxs: HashSet<NodeIndex> = self
             .nodes
             .par_iter()
             .enumerate()
             .filter_map(|(idx, node)| node.id.starts_with(prefix).then_some(idx))
             .collect();
 
-        self.extract(nodes)
+        self.extract(node_idxs)
     }
 
     pub fn neighbors(&self, center: &str, depth: usize) -> Option<Graph> {
         let center = self.nlookup.get_by_left(center).unwrap();
 
         let mut visited = HashSet::new();
-        let mut frontier: VecDeque<(usize, usize)> = VecDeque::new();
+        let mut frontier: VecDeque<(NodeIndex, usize)> = VecDeque::new();
         frontier.push_back((*center, 0));
 
         let empty = HashSet::new();
@@ -76,12 +81,12 @@ impl Graph {
     pub fn subgraph(&self, root: &str) -> Option<Graph> {
         let &root = self.slookup.get_by_left(root).unwrap();
         let root = &self.subgraphs[root];
-        let nodes = root.collect(&self.subgraphs);
+        let node_idxs = root.collect(&self.subgraphs);
 
-        self.extract(nodes)
+        self.extract(node_idxs)
     }
 
-    pub fn extract(&self, node_idxs: HashSet<usize>) -> Option<Graph> {
+    pub fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
         if node_idxs.is_empty() {
             return None;
         }
@@ -196,12 +201,12 @@ fn topsort(nodes: Vec<Node>, edges: &[Edge]) -> Vec<Node> {
     let lookup = make_nlookup(&nodes);
     let (fwdmap, bwdmap) = make_edge_maps(edges, &lookup);
 
-    let mut indegrees: HashMap<usize, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
+    let mut indegrees: HashMap<NodeIndex, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
     for (&to, froms) in &bwdmap {
         indegrees.insert(to, froms.len());
     }
 
-    let mut visited: HashSet<usize> = HashSet::new();
+    let mut visited: HashSet<NodeIndex> = HashSet::new();
 
     let mut queue = VecDeque::new();
     for (&node, _) in indegrees.iter().filter(|&(_, &indegree)| indegree == 0) {
@@ -228,31 +233,31 @@ fn topsort(nodes: Vec<Node>, edges: &[Edge]) -> Vec<Node> {
     sorted
 }
 
-fn make_ilookup(subgraphs: &[IGraph]) -> BiMap<String, usize> {
+fn make_ilookup(subgraphs: &[IGraph]) -> BiMap<String, IGraphIndex> {
     (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
 }
 
-fn make_slookup(subgraphs: &[SubGraph]) -> BiMap<String, usize> {
+fn make_slookup(subgraphs: &[SubGraph]) -> BiMap<String, SubGraphIndex> {
     (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
 }
 
-fn make_nlookup(nodes: &[Node]) -> BiMap<String, usize> {
+fn make_nlookup(nodes: &[Node]) -> BiMap<String, NodeIndex> {
     (nodes.iter().enumerate()).map(|(idx, node)| (node.id.clone(), idx)).collect()
 }
 
-fn make_elookup(edges: &[Edge]) -> BiMap<(String, String), usize> {
+fn make_elookup(edges: &[Edge]) -> BiMap<(String, String), EdgeIndex> {
     (edges.iter().enumerate())
         .map(|(idx, edge)| ((edge.from.clone(), edge.to.clone()), idx))
         .collect()
 }
 
-fn make_edge_maps(edges: &[Edge], lookup: &BiMap<String, usize>) -> (EdgeMap, EdgeMap) {
+fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<String, NodeIndex>) -> (EdgeMap, EdgeMap) {
     let mut fwdmap = EdgeMap::new();
     let mut bwdmap = EdgeMap::new();
 
     for edge in edges {
-        let &from = lookup.get_by_left(edge.from.as_str()).unwrap();
-        let &to = lookup.get_by_left(edge.to.as_str()).unwrap();
+        let &from = nlookup.get_by_left(edge.from.as_str()).unwrap();
+        let &to = nlookup.get_by_left(edge.to.as_str()).unwrap();
 
         let entry = fwdmap.entry(from).or_default();
         entry.insert(to);
@@ -264,7 +269,7 @@ fn make_edge_maps(edges: &[Edge], lookup: &BiMap<String, usize>) -> (EdgeMap, Ed
     (fwdmap, bwdmap)
 }
 
-fn make_subtree(subgraphs: &[SubGraph]) -> HashMap<usize, Vec<usize>> {
+fn make_subtree(subgraphs: &[SubGraph]) -> HashMap<SubGraphIndex, Vec<SubGraphIndex>> {
     let mut subtree = HashMap::new();
 
     for (idx, subgraph) in subgraphs.iter().enumerate() {

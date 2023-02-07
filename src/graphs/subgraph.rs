@@ -3,16 +3,20 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
 
+type SubGraphIndex = usize;
+type NodeIndex = usize;
+type EdgeIndex = usize;
+
 #[derive(Debug, Clone)]
 pub struct SubGraph {
     pub id: String,
-    pub subgraphs: Vec<usize>,
-    pub nodes: Vec<usize>,
-    pub edges: Vec<usize>,
+    pub subgraphs: Vec<SubGraphIndex>,
+    pub nodes: Vec<NodeIndex>,
+    pub edges: Vec<EdgeIndex>,
 }
 
 impl SubGraph {
-    pub fn is_empty(&self, empty_subgraph_idxs: &HashSet<usize>) -> bool {
+    pub fn is_empty(&self, empty_subgraph_idxs: &HashSet<SubGraphIndex>) -> bool {
         let subgraphs: Vec<usize> = self
             .subgraphs
             .par_iter()
@@ -23,8 +27,8 @@ impl SubGraph {
         subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty()
     }
 
-    pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<usize> {
-        let nodes = self
+    pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<NodeIndex> {
+        let node_idxs = self
             .subgraphs
             .iter()
             .map(|&subgraph| {
@@ -33,9 +37,9 @@ impl SubGraph {
             })
             .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
-        let nodes = nodes.union(&HashSet::from_iter(self.nodes.clone())).cloned().collect();
+        let node_idxs = node_idxs.union(&HashSet::from_iter(self.nodes.clone())).cloned().collect();
 
-        nodes
+        node_idxs
     }
 
     pub fn extract_nodes(
@@ -43,13 +47,13 @@ impl SubGraph {
         nreplace: &HashMap<usize, usize>,
         ereplace: &HashMap<usize, usize>,
     ) -> SubGraph {
-        let nodes: Vec<usize> = self
+        let nodes: Vec<NodeIndex> = self
             .nodes
             .par_iter()
             .filter_map(|node| nreplace.get(node).cloned())
             .collect();
 
-        let edges: Vec<usize> = self
+        let edges: Vec<EdgeIndex> = self
             .edges
             .par_iter()
             .filter_map(|edge| ereplace.get(edge).cloned())
@@ -59,7 +63,7 @@ impl SubGraph {
     }
 
     pub fn extract_subgraph(&self, sreplace: &HashMap<usize, usize>) -> Option<SubGraph> {
-        let subgraphs: Vec<usize> = self
+        let subgraphs: Vec<SubGraphIndex> = self
             .subgraphs
             .par_iter()
             .filter_map(|subgraph| sreplace.get(subgraph).cloned())

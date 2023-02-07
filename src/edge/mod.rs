@@ -1,5 +1,7 @@
-use std::fmt::Write;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fmt::Write;
+
+type NodeIndex = usize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Edge {
@@ -8,7 +10,7 @@ pub struct Edge {
     pub attrs: BTreeMap<String, String>,
 }
 
-pub type EdgeMap = HashMap<usize, HashSet<usize>>;
+pub type EdgeMap = HashMap<NodeIndex, HashSet<NodeIndex>>;
 
 impl Edge {
     pub fn to_dot(&self, indent: usize) -> String {
