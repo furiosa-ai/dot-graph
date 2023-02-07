@@ -47,17 +47,11 @@ impl SubGraph {
         nreplace: &HashMap<usize, usize>,
         ereplace: &HashMap<usize, usize>,
     ) -> SubGraph {
-        let nodes: Vec<NodeIndex> = self
-            .nodes
-            .par_iter()
-            .filter_map(|node| nreplace.get(node).cloned())
-            .collect();
+        let nodes: Vec<NodeIndex> =
+            self.nodes.par_iter().filter_map(|node| nreplace.get(node).cloned()).collect();
 
-        let edges: Vec<EdgeIndex> = self
-            .edges
-            .par_iter()
-            .filter_map(|edge| ereplace.get(edge).cloned())
-            .collect();
+        let edges: Vec<EdgeIndex> =
+            self.edges.par_iter().filter_map(|edge| ereplace.get(edge).cloned()).collect();
 
         SubGraph { id: self.id.clone(), subgraphs: self.subgraphs.clone(), nodes, edges }
     }
@@ -92,9 +86,9 @@ impl SubGraph {
         let tabs = "\t".repeat(indent);
 
         if indent == 0 {
-            write!(dot, "digraph {} {{\n", self.id).unwrap();
+            writeln!(dot, "digraph {} {{", self.id).unwrap();
         } else {
-            write!(dot, "{}subgraph {} {{\n", tabs, self.id).unwrap();
+            writeln!(dot, "{}subgraph {} {{", tabs, self.id).unwrap();
         }
 
         for &subgraph in &self.subgraphs {
@@ -104,15 +98,15 @@ impl SubGraph {
 
         for &node in &self.nodes {
             let node = &nodes[node];
-            write!(dot, "{}{}\n", tabs, node.to_dot(indent + 1)).unwrap();
+            writeln!(dot, "{}{}", tabs, node.to_dot(indent + 1)).unwrap();
         }
 
         for &edge in &self.edges {
             let edge = &edges[edge];
-            write!(dot, "{}{}\n", tabs, edge.to_dot(indent + 1)).unwrap();
+            writeln!(dot, "{}{}", tabs, edge.to_dot(indent + 1)).unwrap();
         }
 
-        write!(dot, "{} }}\n", tabs).unwrap();
+        writeln!(dot, "{} }}", tabs).unwrap();
 
         dot
     }

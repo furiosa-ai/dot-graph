@@ -67,7 +67,7 @@ impl Graph {
             if vicinity > depth || !visited.insert(node) {
                 continue;
             }
- 
+
             let tos = self.fwdmap.get(&node).unwrap_or(&empty);
             let froms = self.bwdmap.get(&node).unwrap_or(&empty);
             let nexts = tos.union(froms);
@@ -124,7 +124,9 @@ impl Graph {
             empty_subgraph_idxs = subgraphs
                 .par_iter()
                 .enumerate()
-                .filter_map(|(idx, subgraph)| subgraph.is_empty(&empty_subgraph_idxs).then_some(idx))
+                .filter_map(|(idx, subgraph)| {
+                    subgraph.is_empty(&empty_subgraph_idxs).then_some(idx)
+                })
                 .collect();
 
             let after = empty_subgraph_idxs.len();

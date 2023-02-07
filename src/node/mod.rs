@@ -12,14 +12,14 @@ impl Node {
         let mut dot = String::new();
         let tabs = "\t".repeat(indent);
 
-        write!(dot, "{}{}[\n", tabs, self.id).unwrap();
+        writeln!(dot, "{}{}[", tabs, self.id).unwrap();
 
         for (key, value) in &self.attrs {
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                write!(dot, "{}{}=<{}>\n", tabs, key, value).unwrap();
+                writeln!(dot, "{}{}=<{}>", tabs, key, value).unwrap();
             } else {
-                write!(dot, "{}{}=\"{}\"\n", tabs, key, value).unwrap();
+                writeln!(dot, "{}{}=\"{}\"", tabs, key, value).unwrap();
             }
         }
 
