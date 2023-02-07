@@ -41,7 +41,7 @@ fn parse_graph(graph: *mut Agraph_s) -> Graph {
     let mut edges = HashSet::new();
     parse_igraph(graph, &mut subgraphs, &mut nodes, &mut edges);
 
-    Graph::new(id, subgraphs, Vec::from_iter(nodes), Vec::from_iter(edges))
+    Graph::new(id, &subgraphs, &Vec::from_iter(nodes), &Vec::from_iter(edges))
 }
 
 fn parse_igraph(

@@ -31,9 +31,10 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(id: String, igraphs: Vec<IGraph>, nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
-        let nodes = topsort(nodes, &edges);
-        let slookup = make_ilookup(&igraphs);
+    pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
+        let nodes = topsort(nodes, edges);
+        let edges = Vec::from(edges);
+        let slookup = make_ilookup(igraphs);
         let nlookup = make_nlookup(&nodes);
         let elookup = make_elookup(&edges);
         let (fwdmap, bwdmap) = make_edge_maps(&edges, &nlookup);
@@ -199,7 +200,7 @@ impl Graph {
     }
 }
 
-fn topsort(nodes: Vec<Node>, edges: &[Edge]) -> Vec<Node> {
+fn topsort(nodes: &[Node], edges: &[Edge]) -> Vec<Node> {
     let lookup = make_nlookup(&nodes);
     let (fwdmap, bwdmap) = make_edge_maps(edges, &lookup);
 
