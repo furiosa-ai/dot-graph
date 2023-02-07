@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -11,29 +12,35 @@ pub type EdgeMap = HashMap<usize, HashSet<usize>>;
 
 impl Edge {
     pub fn to_dot(&self, indent: usize) -> String {
-        let tabs = "\t".repeat(indent);
-        let mut dot = String::from("");
+        let mut dot = String::new();
+        let mut ports = Vec::with_capacity(2);
 
-        let headport = match self.attrs.get("headport") {
-            Some(headport) => format!(":{}", headport),
-            None => "".to_string(),
+        (0..indent).for_each(|_| dot.push('\t'));
+
+        dot.push_str(&self.from);
+
+        let tailport = self.attrs.get("tailport");
+        if let Some(tailport) = tailport {
+            write!(dot, ":{}", tailport).unwrap();
+            ports.push("tailport");
+        }
+
+        dot.push_str(" -> ");
+
+        dot.push_str(&self.to);
+
+        let headport = self.attrs.get("headport");
+        if let Some(headport) = headport {
+            write!(dot, ":{}", headport).unwrap();
+            ports.push("headport");
         };
 
-        let tailport = match self.attrs.get("tailport") {
-            Some(tailport) => format!(":{}", tailport),
-            None => "".to_string(),
-        };
-
-        dot.push_str(&format!("{}{}{} -> {}{}", tabs, self.from, tailport, self.to, headport));
-
-        let mut attrs = self.attrs.clone();
-        attrs.remove("headport");
-        attrs.remove("tailport");
-
-        if !attrs.is_empty() {
+        if self.attrs.len() > ports.len() {
             dot.push_str(" [ ");
-            for (key, value) in &attrs {
-                dot.push_str(&format!("{}={} ", key, value));
+            for (key, value) in &self.attrs {
+                if !ports.contains(&&key[..]) {
+                    write!(dot, "{key}={value} ").unwrap();
+                }
             }
             dot.push(']');
         }

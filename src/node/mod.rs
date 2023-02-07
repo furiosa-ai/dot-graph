@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt::Write;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Node {
@@ -8,19 +9,21 @@ pub struct Node {
 
 impl Node {
     pub fn to_dot(&self, indent: usize) -> String {
+        let mut dot = String::new();
         let tabs = "\t".repeat(indent);
-        let mut dot = String::from("");
 
-        dot.push_str(&format!("{}{}[\n", tabs, self.id));
+        write!(dot, "{}{}[\n", tabs, self.id).unwrap();
+
         for (key, value) in &self.attrs {
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                dot.push_str(&format!("{}{}=<{}>\n", tabs, key, value));
+                write!(dot, "{}{}=<{}>\n", tabs, key, value).unwrap();
             } else {
-                dot.push_str(&format!("{}{}=\"{}\"\n", tabs, key, value));
+                write!(dot, "{}{}=\"{}\"\n", tabs, key, value).unwrap();
             }
         }
-        dot.push_str(&format!("{}];", tabs));
+
+        write!(dot, "{}];", tabs).unwrap();
 
         dot
     }

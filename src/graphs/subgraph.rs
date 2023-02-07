@@ -1,6 +1,7 @@
 use crate::{edge::Edge, node::Node};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write;
 
 #[derive(Debug, Clone)]
 pub struct SubGraph {
@@ -89,13 +90,13 @@ impl SubGraph {
         nodes: &[Node],
         edges: &[Edge],
     ) -> String {
+        let mut dot = String::new();
         let tabs = "\t".repeat(indent);
-        let mut dot = String::from("");
 
         if indent == 0 {
-            dot.push_str(&format!("{}digraph {} {{\n", tabs, self.id));
+            write!(dot, "digraph {} {{\n", self.id).unwrap();
         } else {
-            dot.push_str(&format!("{}subgraph {} {{\n", tabs, self.id));
+            write!(dot, "{}subgraph {} {{\n", tabs, self.id).unwrap();
         }
 
         for &subgraph in &self.subgraphs {
@@ -105,15 +106,15 @@ impl SubGraph {
 
         for &node in &self.nodes {
             let node = &nodes[node];
-            dot.push_str(&format!("{}{}\n", tabs, &node.to_dot(indent + 1)));
+            write!(dot, "{}{}\n", tabs, node.to_dot(indent + 1)).unwrap();
         }
 
         for &edge in &self.edges {
             let edge = &edges[edge];
-            dot.push_str(&format!("{}{}\n", tabs, &edge.to_dot(indent + 1)));
+            write!(dot, "{}{}\n", tabs, edge.to_dot(indent + 1)).unwrap();
         }
 
-        dot.push_str(&format!("{} }}\n", tabs));
+        write!(dot, "{} }}\n", tabs).unwrap();
 
         dot
     }
