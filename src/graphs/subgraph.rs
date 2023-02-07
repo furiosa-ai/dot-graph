@@ -1,4 +1,4 @@
-use crate::{edge::edge::Edge, node::node::Node};
+use crate::{edge::Edge, node::Node};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 

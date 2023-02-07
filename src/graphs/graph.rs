@@ -1,7 +1,7 @@
 use crate::{
-    edge::edge::{Edge, EdgeMap},
-    graph::{igraph::IGraph, subgraph::SubGraph},
-    node::node::Node,
+    edge::{Edge, EdgeMap},
+    graphs::{igraph::IGraph, subgraph::SubGraph},
+    node::Node,
 };
 use bimap::BiMap;
 use rayon::prelude::*;
@@ -32,7 +32,7 @@ impl Graph {
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
-        let subgraphs =
+        let subgraphs: Vec<SubGraph> =
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
         let subtree = Self::get_subtree(&subgraphs);
 
@@ -266,7 +266,7 @@ impl Graph {
         (fwdmap, bwdmap)
     }
 
-    pub fn get_subtree(subgraphs: &Vec<SubGraph>) -> HashMap<usize, Vec<usize>> {
+    pub fn get_subtree(subgraphs: &[SubGraph]) -> HashMap<usize, Vec<usize>> {
         let mut subtree = HashMap::new();
 
         for (idx, subgraph) in subgraphs.iter().enumerate() {

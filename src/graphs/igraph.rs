@@ -1,4 +1,4 @@
-use crate::{edge::edge::Edge, graph::subgraph::SubGraph, node::node::Node};
+use crate::{edge::Edge, graphs::subgraph::SubGraph, node::Node};
 use bimap::BiMap;
 use rayon::prelude::*;
 

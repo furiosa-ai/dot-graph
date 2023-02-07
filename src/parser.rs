@@ -4,9 +4,9 @@ use crate::graphviz::{
 };
 use crate::DotGraphError;
 use crate::{
-    edge::edge::Edge,
-    graph::{graph::Graph, igraph::IGraph},
-    node::node::Node,
+    edge::Edge,
+    graphs::{Graph, IGraph},
+    node::Node,
 };
 use std::collections::{BTreeMap, HashSet};
 use std::ffi::{CStr, CString};
@@ -33,7 +33,7 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
     }
 }
 
-pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
+fn parse_graph(graph: *mut Agraph_s) -> Graph {
     let id = parse_name(graph as _);
 
     let mut subgraphs = Vec::new();
@@ -44,7 +44,7 @@ pub fn parse_graph(graph: *mut Agraph_s) -> Graph {
     Graph::new(id, subgraphs, Vec::from_iter(nodes), Vec::from_iter(edges))
 }
 
-pub fn parse_igraph(
+fn parse_igraph(
     graph: *mut Agraph_s,
     subgraphs_visited: &mut Vec<IGraph>,
     nodes_visited: &mut HashSet<Node>,
@@ -110,7 +110,7 @@ pub fn parse_igraph(
     subgraphs_visited.push(subgraph);
 }
 
-pub fn parse_node(
+fn parse_node(
     node: *mut Agnode_s,
     graph: *mut Agraph_s,
     nkeys: &[*mut i8],
@@ -145,7 +145,7 @@ pub fn parse_node(
     (node, edges)
 }
 
-pub fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Edge {
+fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Edge {
     let from = parse_name(node as _);
     let to = unsafe { parse_name((*edge).node as _) };
 
@@ -163,6 +163,6 @@ pub fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -
     Edge { from, to, attrs }
 }
 
-pub fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {
+fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {
     unsafe { c_to_rust_string(agnameof(obj)) }
 }
