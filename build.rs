@@ -33,8 +33,8 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .parse_callbacks(Box::new(ignored_macros))
-        .rustfmt_bindings(true) // Finish the builder and generate the bindings.
-        .generate()
+        .rustfmt_bindings(true)
+        .generate() // Finish the builder and generate the bindings.
         .expect("unable to generate bindings");
 
     let out_path = PathBuf::from(std::env::var("OUT_DIR").unwrap());
