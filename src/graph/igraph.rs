@@ -28,19 +28,10 @@ impl IGraph {
             .collect();
 
         let edges: Vec<usize> = (self.edges.par_iter())
-            .map(|edge| {
-                elookup
-                    .get_by_left(&(edge.from.clone(), edge.to.clone()))
-                    .unwrap()
-            })
+            .map(|edge| elookup.get_by_left(&(edge.from.clone(), edge.to.clone())).unwrap())
             .cloned()
             .collect();
 
-        SubGraph {
-            id: self.id.clone(),
-            subgraphs,
-            nodes,
-            edges,
-        }
+        SubGraph { id: self.id.clone(), subgraphs, nodes, edges }
     }
 }

@@ -105,12 +105,7 @@ pub fn parse_igraph(
         }
     };
 
-    let subgraph = IGraph {
-        id,
-        subgraphs,
-        nodes,
-        edges,
-    };
+    let subgraph = IGraph { id, subgraphs, nodes, edges };
 
     subgraphs_visited.push(subgraph);
 }

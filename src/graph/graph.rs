@@ -32,24 +32,11 @@ impl Graph {
         let nlookup = Self::get_nlookup(&nodes);
         let elookup = Self::get_elookup(&edges);
         let (fwdmap, bwdmap) = Self::get_edgemaps(&edges, &nlookup);
-        let subgraphs = igraphs
-            .par_iter()
-            .map(|igraph| igraph.encode(&slookup, &nlookup, &elookup))
-            .collect();
+        let subgraphs =
+            igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
         let subtree = Self::get_subtree(&subgraphs);
 
-        Graph {
-            id,
-            subtree,
-            subgraphs,
-            slookup,
-            nodes,
-            nlookup,
-            edges,
-            elookup,
-            fwdmap,
-            bwdmap,
-        }
+        Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
     }
 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
@@ -57,13 +44,7 @@ impl Graph {
             .nodes
             .par_iter()
             .enumerate()
-            .filter_map(|(idx, node)| {
-                if node.id.starts_with(prefix) {
-                    Some(idx)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(idx, node)| if node.id.starts_with(prefix) { Some(idx) } else { None })
             .collect();
 
         self.extract(nodes)
@@ -140,13 +121,15 @@ impl Graph {
             empty = subgraphs
                 .par_iter()
                 .enumerate()
-                .filter_map(|(idx, subgraph)| {
-                    if subgraph.is_empty(&empty) {
-                        Some(idx)
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(
+                    |(idx, subgraph)| {
+                        if subgraph.is_empty(&empty) {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    },
+                )
                 .collect();
 
             let after = empty.len();
@@ -196,9 +179,7 @@ impl Graph {
             .get_by_left(id)
             .map(|idx| {
                 let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
-                (froms.iter())
-                    .map(|&idx| self.nodes[idx].id.as_str())
-                    .collect()
+                (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect()
             })
             .unwrap_or_default()
     }
@@ -208,9 +189,7 @@ impl Graph {
             .get_by_left(id)
             .map(|idx| {
                 let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
-                (tos.iter())
-                    .map(|&idx| self.nodes[idx].id.as_str())
-                    .collect()
+                (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect()
             })
             .unwrap_or_default()
     }
@@ -252,21 +231,15 @@ impl Graph {
     }
 
     fn get_ilookup(subgraphs: &[IGraph]) -> BiMap<String, usize> {
-        (subgraphs.iter().enumerate())
-            .map(|(idx, subgraph)| (subgraph.id.clone(), idx))
-            .collect()
+        (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
     }
 
     fn get_slookup(subgraphs: &[SubGraph]) -> BiMap<String, usize> {
-        (subgraphs.iter().enumerate())
-            .map(|(idx, subgraph)| (subgraph.id.clone(), idx))
-            .collect()
+        (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
     }
 
     fn get_nlookup(nodes: &[Node]) -> BiMap<String, usize> {
-        (nodes.iter().enumerate())
-            .map(|(idx, node)| (node.id.clone(), idx))
-            .collect()
+        (nodes.iter().enumerate()).map(|(idx, node)| (node.id.clone(), idx)).collect()
     }
 
     fn get_elookup(edges: &[Edge]) -> BiMap<(String, String), usize> {

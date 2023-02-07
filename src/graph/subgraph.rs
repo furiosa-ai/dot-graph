@@ -30,14 +30,9 @@ impl SubGraph {
                 let subgraph = &subgraphs[subgraph];
                 subgraph.collect(subgraphs)
             })
-            .fold(HashSet::new(), |acc, nodes| {
-                acc.union(&nodes).cloned().collect()
-            });
+            .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
-        let nodes = nodes
-            .union(&HashSet::from_iter(self.nodes.clone()))
-            .cloned()
-            .collect();
+        let nodes = nodes.union(&HashSet::from_iter(self.nodes.clone())).cloned().collect();
 
         nodes
     }
@@ -50,33 +45,16 @@ impl SubGraph {
         let nodes: Vec<usize> = self
             .nodes
             .par_iter()
-            .filter_map(|node| {
-                if let Some(&node) = nreplace.get(node) {
-                    Some(node)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|node| if let Some(&node) = nreplace.get(node) { Some(node) } else { None })
             .collect();
 
         let edges: Vec<usize> = self
             .edges
             .par_iter()
-            .filter_map(|edge| {
-                if let Some(&edge) = ereplace.get(edge) {
-                    Some(edge)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|edge| if let Some(&edge) = ereplace.get(edge) { Some(edge) } else { None })
             .collect();
 
-        SubGraph {
-            id: self.id.clone(),
-            subgraphs: self.subgraphs.clone(),
-            nodes,
-            edges,
-        }
+        SubGraph { id: self.id.clone(), subgraphs: self.subgraphs.clone(), nodes, edges }
     }
 
     pub fn extract_subgraph(&self, sreplace: &HashMap<usize, usize>) -> Option<SubGraph> {
