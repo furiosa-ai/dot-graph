@@ -1,7 +1,7 @@
 use crate::{
     edge::{Edge, EdgeMap},
     graphs::{igraph::IGraph, subgraph::SubGraph},
-    node::Node,
+    node::Node, DotGraphError,
 };
 use bimap::BiMap;
 use rayon::prelude::*;
@@ -60,35 +60,40 @@ impl Graph {
         self.extract(node_idxs)
     }
 
-    pub fn neighbors(&self, center: &str, depth: usize) -> Option<Graph> {
-        let center = self.nlookup.get_by_left(center).unwrap();
+    pub fn neighbors(&self, center: &str, depth: usize) -> Result<Option<Graph>, DotGraphError> {
+        self.nlookup.get_by_left(center).map_or(
+            Err(DotGraphError::NoSuchNode(center.to_string(), self.id.clone())),
+            |center| {
+                let mut visited = HashSet::new();
+                let mut frontier: VecDeque<(NodeIndex, usize)> = VecDeque::new();
+                frontier.push_back((*center, 0));
 
-        let mut visited = HashSet::new();
-        let mut frontier: VecDeque<(NodeIndex, usize)> = VecDeque::new();
-        frontier.push_back((*center, 0));
+                let empty = HashSet::new();
+                while let Some((node, vicinity)) = frontier.pop_front() {
+                    if vicinity > depth || !visited.insert(node) {
+                        continue;
+                    }
 
-        let empty = HashSet::new();
-        while let Some((node, vicinity)) = frontier.pop_front() {
-            if vicinity > depth || !visited.insert(node) {
-                continue;
-            }
+                    let tos = self.fwdmap.get(&node).unwrap_or(&empty);
+                    let froms = self.bwdmap.get(&node).unwrap_or(&empty);
+                    let nexts = tos.union(froms);
 
-            let tos = self.fwdmap.get(&node).unwrap_or(&empty);
-            let froms = self.bwdmap.get(&node).unwrap_or(&empty);
-            let nexts = tos.union(froms);
+                    frontier.extend(nexts.map(|&next| (next, vicinity + 1)));
+                }
 
-            frontier.extend(nexts.map(|&next| (next, vicinity + 1)));
-        }
-
-        self.extract(visited)
+                Ok(self.extract(visited))
+            })
     }
 
-    pub fn subgraph(&self, root: &str) -> Option<Graph> {
-        let &root = self.slookup.get_by_left(root).unwrap();
-        let root = &self.subgraphs[root];
-        let node_idxs = root.collect(&self.subgraphs);
+    pub fn subgraph(&self, root: &str) -> Result<Option<Graph>, DotGraphError> {
+        self.slookup.get_by_left(root).map_or(
+            Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
+            |&root| {
+                let root = &self.subgraphs[root];
+                let node_idxs = root.collect(&self.subgraphs);
 
-        self.extract(node_idxs)
+                Ok(self.extract(node_idxs))
+            })
     }
 
     pub fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
@@ -177,24 +182,28 @@ impl Graph {
         self.nlookup.get_by_left(id).map(|&idx| &self.nodes[idx])
     }
 
-    pub fn froms(&self, id: &str) -> HashSet<&str> {
+    pub fn froms(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
         self.nlookup
             .get_by_left(id)
-            .map(|idx| {
-                let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
-                (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect()
-            })
-            .unwrap_or_default()
+            .map_or(
+                Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+                |idx| {
+                    let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
+                    let froms = (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
+                    Ok(froms)
+                })
     }
 
-    pub fn tos(&self, id: &str) -> HashSet<&str> {
+    pub fn tos(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
         self.nlookup
             .get_by_left(id)
-            .map(|idx| {
-                let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
-                (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect()
-            })
-            .unwrap_or_default()
+            .map_or(
+                Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+                |idx| {
+                    let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
+                    let tos = (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
+                    Ok(tos)
+                })
     }
 
     pub fn to_dot(&self) -> String {

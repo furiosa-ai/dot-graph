@@ -3,7 +3,11 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum DotGraphError {
     #[error("`{0}` is not a valid dot graph")]
-    Invalid(String),
+    InvalidGraph(String),
     #[error("`{0}` is not a digraph")]
-    UnDiGraph(String),
+    UndirectedGraph(String),
+    #[error("`{0}` is not a node of graph `{1}`")]
+    NoSuchNode(String, String),
+    #[error("`{0}` is not a subgraph of graph `{1}`")]
+    NoSuchSubGraph(String, String),
 }

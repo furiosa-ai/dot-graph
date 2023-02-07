@@ -23,10 +23,10 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
 
         let graph = agread(fp as _, 0 as _);
         if graph.is_null() {
-            return Err(DotGraphError::Invalid(String::from(path)));
+            return Err(DotGraphError::InvalidGraph(String::from(path)));
         }
         if agisdirected(graph) == 0 {
-            return Err(DotGraphError::UnDiGraph(String::from(path)));
+            return Err(DotGraphError::UndirectedGraph(String::from(path)));
         }
 
         Ok(parse_graph(graph))
