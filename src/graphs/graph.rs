@@ -11,8 +11,7 @@ type IGraphIndex = usize;
 type SubGraphIndex = usize;
 type NodeIndex = usize;
 type EdgeIndex = usize;
-
-pub type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
+type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
 
 #[derive(Debug, Clone)]
 pub struct Graph {
@@ -34,14 +33,17 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
-        let nodes = topsort(nodes, edges);
-        let edges = Vec::from(edges);
+        let nlookup = make_nlookup(nodes);
+        let elookup = make_elookup(edges);
         let slookup = make_ilookup(igraphs);
-        let nlookup = make_nlookup(&nodes);
-        let elookup = make_elookup(&edges);
-        let (fwdmap, bwdmap) = make_edge_maps(&edges, &nlookup);
+
+        let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup);
+
+        let nodes = topsort(nodes, &fwdmap, &bwdmap);
+        let edges = Vec::from(edges);
         let subgraphs: Vec<SubGraph> =
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
+
         let subtree = make_subtree(&subgraphs);
 
         Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
@@ -202,12 +204,9 @@ impl Graph {
     }
 }
 
-fn topsort(nodes: &[Node], edges: &[Edge]) -> Vec<Node> {
-    let lookup = make_nlookup(&nodes);
-    let (fwdmap, bwdmap) = make_edge_maps(edges, &lookup);
-
+fn topsort(nodes: &[Node], fwdmap: &EdgeMap, bwdmap: &EdgeMap) -> Vec<Node> {
     let mut indegrees: HashMap<NodeIndex, usize> = (0..nodes.len()).map(|idx| (idx, 0)).collect();
-    for (&to, froms) in &bwdmap {
+    for (&to, froms) in bwdmap {
         indegrees.insert(to, froms.len());
     }
 
