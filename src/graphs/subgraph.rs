@@ -12,11 +12,11 @@ pub struct SubGraph {
 }
 
 impl SubGraph {
-    pub fn is_empty(&self, empty: &HashSet<usize>) -> bool {
+    pub fn is_empty(&self, empty_subgraph_idxs: &HashSet<usize>) -> bool {
         let subgraphs: Vec<usize> = self
             .subgraphs
             .par_iter()
-            .filter(|subgraph| !empty.contains(subgraph))
+            .filter(|subgraph| !empty_subgraph_idxs.contains(subgraph))
             .cloned()
             .collect();
 

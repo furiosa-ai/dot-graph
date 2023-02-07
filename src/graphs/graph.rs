@@ -57,14 +57,12 @@ impl Graph {
         let mut frontier: VecDeque<(usize, usize)> = VecDeque::new();
         frontier.push_back((*center, 0));
 
+        let empty = HashSet::new();
         while let Some((node, vicinity)) = frontier.pop_front() {
-            if vicinity > depth || visited.contains(&node) {
+            if vicinity > depth || !visited.insert(node) {
                 continue;
             }
-
-            visited.insert(node);
-
-            let empty = HashSet::new();
+ 
             let tos = self.fwdmap.get(&node).unwrap_or(&empty);
             let froms = self.bwdmap.get(&node).unwrap_or(&empty);
             let nexts = tos.union(froms);
@@ -83,15 +81,15 @@ impl Graph {
         self.extract(nodes)
     }
 
-    pub fn extract(&self, extract: HashSet<usize>) -> Option<Graph> {
-        if extract.is_empty() {
+    pub fn extract(&self, node_idxs: HashSet<usize>) -> Option<Graph> {
+        if node_idxs.is_empty() {
             return None;
         }
 
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
         for (idx, node) in self.nodes.iter().enumerate() {
-            if extract.contains(&idx) {
+            if node_idxs.contains(&idx) {
                 nodes.push(node.clone());
                 nreplace.insert(idx, nodes.len() - 1);
             }
@@ -103,7 +101,7 @@ impl Graph {
             let from = self.nlookup.get_by_left(&edge.from).unwrap();
             let to = self.nlookup.get_by_left(&edge.to).unwrap();
 
-            if extract.contains(from) && extract.contains(to) {
+            if node_idxs.contains(from) && node_idxs.contains(to) {
                 edges.push(edge.clone());
                 ereplace.insert(idx, edges.len() - 1);
             }
@@ -114,17 +112,18 @@ impl Graph {
             .par_iter()
             .map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace))
             .collect();
-        let mut empty: HashSet<usize> = HashSet::new();
+        let mut empty_subgraph_idxs: HashSet<usize> = HashSet::new();
         loop {
-            let before = empty.len();
+            let before = empty_subgraph_idxs.len();
 
-            empty = subgraphs
+            empty_subgraph_idxs = subgraphs
                 .par_iter()
                 .enumerate()
-                .filter_map(|(idx, subgraph)| subgraph.is_empty(&empty).then_some(idx))
+                .filter_map(|(idx, subgraph)| subgraph.is_empty(&empty_subgraph_idxs).then_some(idx))
                 .collect();
 
-            let after = empty.len();
+            let after = empty_subgraph_idxs.len();
+            println!("before {} after {}", before, after);
             if before == after {
                 break;
             }
@@ -132,7 +131,7 @@ impl Graph {
 
         let mut sreplace = HashMap::new();
         for idx in 0..subgraphs.len() {
-            if !empty.contains(&idx) {
+            if !empty_subgraph_idxs.contains(&idx) {
                 sreplace.insert(idx, sreplace.len());
             }
         }
