@@ -44,7 +44,7 @@ impl Graph {
             .nodes
             .par_iter()
             .enumerate()
-            .filter_map(|(idx, node)| if node.id.starts_with(prefix) { Some(idx) } else { None })
+            .filter_map(|(idx, node)| node.id.starts_with(prefix).then_some(idx))
             .collect();
 
         self.extract(nodes)
@@ -121,15 +121,7 @@ impl Graph {
             empty = subgraphs
                 .par_iter()
                 .enumerate()
-                .filter_map(
-                    |(idx, subgraph)| {
-                        if subgraph.is_empty(&empty) {
-                            Some(idx)
-                        } else {
-                            None
-                        }
-                    },
-                )
+                .filter_map(|(idx, subgraph)| subgraph.is_empty(&empty).then_some(idx))
                 .collect();
 
             let after = empty.len();

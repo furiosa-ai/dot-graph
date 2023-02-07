@@ -46,13 +46,13 @@ impl SubGraph {
         let nodes: Vec<usize> = self
             .nodes
             .par_iter()
-            .filter_map(|node| if let Some(&node) = nreplace.get(node) { Some(node) } else { None })
+            .filter_map(|node| nreplace.get(node).cloned())
             .collect();
 
         let edges: Vec<usize> = self
             .edges
             .par_iter()
-            .filter_map(|edge| if let Some(&edge) = ereplace.get(edge) { Some(edge) } else { None })
+            .filter_map(|edge| ereplace.get(edge).cloned())
             .collect();
 
         SubGraph { id: self.id.clone(), subgraphs: self.subgraphs.clone(), nodes, edges }
@@ -62,13 +62,7 @@ impl SubGraph {
         let subgraphs: Vec<usize> = self
             .subgraphs
             .par_iter()
-            .filter_map(|subgraph| {
-                if let Some(&subgraph) = sreplace.get(subgraph) {
-                    Some(subgraph)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|subgraph| sreplace.get(subgraph).cloned())
             .collect();
 
         if subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty() {
