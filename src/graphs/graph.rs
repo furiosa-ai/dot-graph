@@ -223,10 +223,9 @@ fn topsort(nodes: &[Node], fwdmap: &EdgeMap, bwdmap: &EdgeMap) -> Vec<Node> {
         sorted.push(nodes[node].clone());
         if let Some(tos) = fwdmap.get(&node) {
             for to in tos {
-                if let Some(0) = (indegrees.get_mut(to)).map(|i| {
-                    *i -= 1;
-                    i
-                }) {
+                let indegree = indegrees.get_mut(to).unwrap();
+                *indegree -= 1;
+                if *indegree == 0 {
                     queue.push_back(*to);
                     visited.insert(*to);
                 }
