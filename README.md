@@ -1,4 +1,5 @@
 # dot-graph
+
 dot parser in Rust implemented with FFI to Graphviz cgraph library.
 
 ## Prerequisites
@@ -36,11 +37,11 @@ Or, try building from the source code following the [guide](https://graphviz.org
 ## Usage
 
 ```rust
-use dot_graph::parser::parse;
+use dot_graph::parser;
 use dot_graph::DotGraphError;
 
 fn main() -> Result<(), DotGraphError> {
-  let graph = parse(/* path */)?;
+  let graph = parser::parse(/* path */)?;
   println!("{}", graph.to_dot());
   
   Ok(())
