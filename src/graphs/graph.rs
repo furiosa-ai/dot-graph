@@ -130,7 +130,7 @@ impl Graph {
                 .collect();
 
             let after = empty_subgraph_idxs.len();
-            println!("before {} after {}", before, after);
+            
             if before == after {
                 break;
             }
@@ -261,11 +261,8 @@ fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<String, NodeIndex>) -> (EdgeMa
         let &from = nlookup.get_by_left(edge.from.as_str()).unwrap();
         let &to = nlookup.get_by_left(edge.to.as_str()).unwrap();
 
-        let entry = fwdmap.entry(from).or_default();
-        entry.insert(to);
-
-        let entry = bwdmap.entry(to).or_default();
-        entry.insert(from);
+        fwdmap.entry(from).or_default().insert(to);
+        bwdmap.entry(to).or_default().insert(from);
     }
 
     (fwdmap, bwdmap)
