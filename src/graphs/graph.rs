@@ -10,11 +10,11 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 use std::io::Write;
 
-type IGraphIndex = usize;
-type SubGraphIndex = usize;
-type NodeIndex = usize;
-type EdgeIndex = usize;
-type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
+pub type IGraphIndex = usize;
+pub type SubGraphIndex = usize;
+pub type NodeIndex = usize;
+pub type EdgeIndex = usize;
+pub type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
 
 #[derive(Debug, Clone)]
 pub struct Graph {

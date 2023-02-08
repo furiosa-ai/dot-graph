@@ -1,12 +1,15 @@
-use crate::{edge::Edge, graphs::subgraph::SubGraph, node::Node};
+use crate::{
+    edge::Edge, 
+    graphs::{
+        graph::{SubGraphIndex, NodeIndex, EdgeIndex},
+        subgraph::SubGraph,
+    }, 
+    node::Node
+};
 use bimap::BiMap;
 use rayon::prelude::*;
 use std::mem::ManuallyDrop;
 use std::ptr;
-
-type SubGraphIndex = usize;
-type NodeIndex = usize;
-type EdgeIndex = usize;
 
 #[derive(Debug, Clone)]
 pub struct IGraph {

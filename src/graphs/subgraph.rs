@@ -1,11 +1,11 @@
-use crate::{edge::Edge, node::Node};
+use crate::{
+    edge::Edge,
+    graphs::graph::{SubGraphIndex, NodeIndex, EdgeIndex},
+    node::Node,
+};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
-
-type SubGraphIndex = usize;
-type NodeIndex = usize;
-type EdgeIndex = usize;
 
 #[derive(Debug, Clone)]
 pub struct SubGraph {
