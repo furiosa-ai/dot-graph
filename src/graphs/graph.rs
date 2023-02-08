@@ -33,8 +33,9 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
-        let nodes = topsort(nodes, edges);
-        let nlookup = make_nlookup(&nodes);
+        let sorted_nodes = topsort(nodes, edges);
+        let nlookup = make_nlookup(&sorted_nodes);
+        let nodes = sorted_nodes;
 
         let elookup = make_elookup(edges);
         let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup); 
