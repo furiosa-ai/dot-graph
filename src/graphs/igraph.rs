@@ -1,6 +1,8 @@
 use crate::{edge::Edge, graphs::subgraph::SubGraph, node::Node};
 use bimap::BiMap;
 use rayon::prelude::*;
+use std::mem::ManuallyDrop;
+use std::ptr;
 
 type SubGraphIndex = usize;
 type NodeIndex = usize;
@@ -34,7 +36,14 @@ impl IGraph {
             .collect();
 
         let edge_idxs: Vec<EdgeIndex> = (self.edges.par_iter())
-            .map(|edge| elookup.get_by_left(&(edge.from.clone(), edge.to.clone())).unwrap())
+            // https://users.rust-lang.org/t/hashmap-with-tuple-keys/12711/9
+            // workaround to get &(String, String) from (&String, &String) without cloning
+            .map(|edge| unsafe {
+                let key = (ptr::read(&edge.from), ptr::read(&edge.to));
+                let key = ManuallyDrop::new(key);
+
+                elookup.get_by_left(&key).unwrap()
+            })
             .cloned()
             .collect();
 
