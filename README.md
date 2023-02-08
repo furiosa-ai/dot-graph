@@ -42,7 +42,8 @@ use dot_graph::DotGraphError;
 
 fn main() -> Result<(), DotGraphError> {
   let graph = parser::parse(/* path */)?;
-  println!("{}", graph.to_dot());
+  let mut stdout = std::io::stdout();
+  graph.to_dot(&mut stdout);
   
   Ok(())
 }
