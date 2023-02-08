@@ -15,6 +15,16 @@ unsafe fn c_to_rust_string(ptr: *const i8) -> String {
     String::from_utf8_lossy(CStr::from_ptr(ptr).to_bytes()).to_string()
 }
 
+/// Parse the given dot format file in `path`.
+///
+/// # Arguments
+///
+/// * `path` - Path to the dot file in `&str`
+///
+/// # Returns
+///
+/// `Err` if the given file is not a graph or is not a DAG,
+/// otherwise `Ok` with the parsed graph.
 pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
     let cpath = CString::new(path).unwrap();
     let coption = CString::new("r").unwrap();
