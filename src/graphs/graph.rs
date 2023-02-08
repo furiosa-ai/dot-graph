@@ -6,6 +6,7 @@ use crate::{
 use bimap::BiMap;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::io::Write;
 
 type IGraphIndex = usize;
 type SubGraphIndex = usize;
@@ -206,10 +207,11 @@ impl Graph {
                 })
     }
 
-    pub fn to_dot(&self) -> String {
-        let root = self.subgraphs.last().unwrap();
+    pub fn to_dot<W: ?Sized>(&self, writer: &mut W) -> std::io::Result<()> where W: Write {
+        let &root = self.slookup.get_by_left(&self.id).unwrap();
+        let root = &self.subgraphs[root];
 
-        root.to_dot(0, &self.subgraphs, &self.nodes, &self.edges)
+        root.to_dot(0, &self.subgraphs, &self.nodes, &self.edges, writer)
     }
 }
 

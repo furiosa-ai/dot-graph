@@ -1,7 +1,7 @@
 use crate::{edge::Edge, node::Node};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
-use std::fmt::Write;
+use std::io::Write;
 
 type SubGraphIndex = usize;
 type NodeIndex = usize;
@@ -78,39 +78,41 @@ impl SubGraph {
         }
     }
 
-    pub fn to_dot(
+    pub fn to_dot<W: ?Sized>(
         &self,
         indent: usize,
         subgraphs: &[SubGraph],
         nodes: &[Node],
         edges: &[Edge],
-    ) -> String {
-        let mut dot = String::new();
+        writer: &mut W,
+    ) -> std::io::Result<()> where W: Write {
         let tabs = "\t".repeat(indent);
 
         if indent == 0 {
-            writeln!(dot, "digraph {} {{", self.id).unwrap();
+            writeln!(writer, "digraph {} {{", self.id)?;
         } else {
-            writeln!(dot, "{}subgraph {} {{", tabs, self.id).unwrap();
+            writeln!(writer, "{}subgraph {} {{", tabs, self.id)?;
         }
 
         for &idx in &self.subgraph_idxs {
             let subgraph = &subgraphs[idx];
-            dot.push_str(&subgraph.to_dot(indent + 1, subgraphs, nodes, edges));
+            subgraph.to_dot(indent + 1, subgraphs, nodes, edges, writer)?;
         }
 
         for &idx in &self.node_idxs {
             let node = &nodes[idx];
-            writeln!(dot, "{}{}", tabs, node.to_dot(indent + 1)).unwrap();
+            writeln!(writer, "{}", tabs)?;
+            node.to_dot(indent + 1, writer)?;
         }
 
         for &idx in &self.edge_idxs {
             let edge = &edges[idx];
-            writeln!(dot, "{}{}", tabs, edge.to_dot(indent + 1)).unwrap();
+            writeln!(writer, "{}", tabs)?;
+            edge.to_dot(indent + 1, writer)?;
         }
 
-        writeln!(dot, "{} }}", tabs).unwrap();
+        writeln!(writer, "{} }}", tabs)?;
 
-        dot
+        Ok(())
     }
 }
