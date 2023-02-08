@@ -8,7 +8,10 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()> where W: Write {
+    pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
+    where
+        W: Write,
+    {
         let tabs = "\t".repeat(indent);
 
         writeln!(writer, "{}{}[", tabs, self.id)?;

@@ -26,7 +26,8 @@ impl SubGraph {
             })
             .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
-        let node_idxs = node_idxs.union(&HashSet::from_iter(self.node_idxs.clone())).cloned().collect();
+        let node_idxs =
+            node_idxs.union(&HashSet::from_iter(self.node_idxs.clone())).cloned().collect();
 
         node_idxs
     }
@@ -49,12 +50,12 @@ impl SubGraph {
         SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
     }
 
-    pub fn extract_subgraph(&self, sreplace: &HashMap<SubGraphIndex, SubGraphIndex>) -> Option<SubGraph> {
-        let subgraph_idxs: Vec<SubGraphIndex> = self
-            .subgraph_idxs
-            .par_iter()
-            .filter_map(|idx| sreplace.get(idx).cloned())
-            .collect();
+    pub fn extract_subgraph(
+        &self,
+        sreplace: &HashMap<SubGraphIndex, SubGraphIndex>,
+    ) -> Option<SubGraph> {
+        let subgraph_idxs: Vec<SubGraphIndex> =
+            self.subgraph_idxs.par_iter().filter_map(|idx| sreplace.get(idx).cloned()).collect();
 
         if subgraph_idxs.is_empty() && self.node_idxs.is_empty() && self.edge_idxs.is_empty() {
             None
@@ -74,7 +75,10 @@ impl SubGraph {
         nodes: &[Node],
         edges: &[Edge],
         writer: &mut W,
-    ) -> std::io::Result<()> where W: Write {
+    ) -> std::io::Result<()>
+    where
+        W: Write,
+    {
         let tabs = "\t".repeat(indent);
 
         if indent == 0 {

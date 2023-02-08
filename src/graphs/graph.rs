@@ -1,12 +1,13 @@
 use crate::{
     edge::{Edge, EdgeMap},
     graphs::{igraph::IGraph, subgraph::SubGraph},
-    node::Node, DotGraphError,
+    node::Node,
+    DotGraphError,
 };
 use bimap::BiMap;
 use rayon::prelude::*;
-use std::hash::Hash;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::hash::Hash;
 use std::io::Write;
 
 type IGraphIndex = usize;
@@ -43,9 +44,9 @@ impl Graph {
         let nodes = sorted_nodes;
 
         let elookup = make_elookup(edges);
-        let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup); 
+        let (fwdmap, bwdmap) = make_edge_maps(edges, &nlookup);
         let edges = Vec::from(edges);
-        
+
         let slookup = make_ilookup(igraphs);
         let subgraphs: Vec<SubGraph> =
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
@@ -87,7 +88,8 @@ impl Graph {
                 }
 
                 Ok(self.extract(visited))
-            })
+            },
+        )
     }
 
     pub fn subgraph(&self, root: &str) -> Result<Option<Graph>, DotGraphError> {
@@ -98,7 +100,8 @@ impl Graph {
                 let node_idxs = root.collect(&self.subgraphs);
 
                 Ok(self.extract(node_idxs))
-            })
+            },
+        )
     }
 
     pub fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
@@ -172,30 +175,31 @@ impl Graph {
     }
 
     pub fn froms(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
-        self.nlookup
-            .get_by_left(id)
-            .map_or(
-                Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-                |idx| {
-                    let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
-                    let froms = (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
-                    Ok(froms)
-                })
+        self.nlookup.get_by_left(id).map_or(
+            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+            |idx| {
+                let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
+                let froms = (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
+                Ok(froms)
+            },
+        )
     }
 
     pub fn tos(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
-        self.nlookup
-            .get_by_left(id)
-            .map_or(
-                Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-                |idx| {
-                    let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
-                    let tos = (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
-                    Ok(tos)
-                })
+        self.nlookup.get_by_left(id).map_or(
+            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+            |idx| {
+                let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
+                let tos = (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
+                Ok(tos)
+            },
+        )
     }
 
-    pub fn to_dot<W: ?Sized>(&self, writer: &mut W) -> std::io::Result<()> where W: Write {
+    pub fn to_dot<W: ?Sized>(&self, writer: &mut W) -> std::io::Result<()>
+    where
+        W: Write,
+    {
         let &root = self.slookup.get_by_left(&self.id).unwrap();
         let root = &self.subgraphs[root];
 
@@ -203,7 +207,11 @@ impl Graph {
     }
 }
 
-fn is_set<T>(iter: T) -> bool where T: IntoIterator, T::Item: Eq + Hash {
+fn is_set<T>(iter: T) -> bool
+where
+    T: IntoIterator,
+    T::Item: Eq + Hash,
+{
     let mut unique = HashSet::new();
     iter.into_iter().all(move |x| unique.insert(x))
 }
@@ -296,14 +304,16 @@ fn empty_subgraph_idxs(subgraphs: &[SubGraph]) -> HashSet<SubGraphIndex> {
             .par_iter()
             .enumerate()
             .filter_map(|(idx, subgraph)| {
-                let nonempty_subgraph_idxs: Vec<usize> = subgraph 
+                let nonempty_subgraph_idxs: Vec<usize> = subgraph
                     .subgraph_idxs
                     .par_iter()
                     .filter(|idx| !empty_subgraph_idxs.contains(idx))
                     .cloned()
                     .collect();
 
-                let is_empty = nonempty_subgraph_idxs.is_empty() && subgraph.node_idxs.is_empty() && subgraph.edge_idxs.is_empty();
+                let is_empty = nonempty_subgraph_idxs.is_empty()
+                    && subgraph.node_idxs.is_empty()
+                    && subgraph.edge_idxs.is_empty();
 
                 is_empty.then_some(idx)
             })

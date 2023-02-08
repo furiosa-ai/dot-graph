@@ -13,7 +13,10 @@ pub struct Edge {
 pub type EdgeMap = HashMap<NodeIndex, HashSet<NodeIndex>>;
 
 impl Edge {
-    pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()> where W: Write {
+    pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
+    where
+        W: Write,
+    {
         let tabs = "\t".repeat(indent);
         let mut ports = Vec::with_capacity(2);
 
