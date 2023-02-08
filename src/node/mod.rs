@@ -2,12 +2,16 @@ use std::collections::BTreeMap;
 use std::io::{Result, Write};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// A `Node` of a graph.
 pub struct Node {
+    /// Name of the node
     pub id: String,
+    /// Attributes of the node in key, value mappings
     pub attrs: BTreeMap<String, String>,
 }
 
 impl Node {
+    /// Write the node to dot format
     pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
     where
         W: Write,

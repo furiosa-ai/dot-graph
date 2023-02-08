@@ -1,18 +1,22 @@
+use crate::graphs::graph::NodeIndex;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{Result, Write};
 
-type NodeIndex = usize;
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// An (directed) `Edge` of a graph.
 pub struct Edge {
+    /// Id of the start point node
     pub from: String,
+    /// Id of the end point node
     pub to: String,
+    /// Attributes of the edge in key, value mappings
     pub attrs: BTreeMap<String, String>,
 }
 
 pub type EdgeMap = HashMap<NodeIndex, HashSet<NodeIndex>>;
 
 impl Edge {
+    /// Write the edge to dot format
     pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
     where
         W: Write,
