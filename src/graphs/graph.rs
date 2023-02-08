@@ -107,7 +107,7 @@ impl Graph {
         for (idx, node) in self.nodes.iter().enumerate() {
             if node_idxs.contains(&idx) {
                 nodes.push(node.clone());
-                nreplace.insert(idx, nodes.len() - 1);
+                nreplace.insert(idx, nreplace.len());
             }
         }
 
@@ -119,7 +119,7 @@ impl Graph {
 
             if node_idxs.contains(from) && node_idxs.contains(to) {
                 edges.push(edge.clone());
-                ereplace.insert(idx, edges.len() - 1);
+                ereplace.insert(idx, ereplace.len());
             }
         }
 
@@ -128,24 +128,8 @@ impl Graph {
             .par_iter()
             .map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace))
             .collect();
-        let mut empty_subgraph_idxs: HashSet<usize> = HashSet::new();
-        loop {
-            let before = empty_subgraph_idxs.len();
 
-            empty_subgraph_idxs = subgraphs
-                .par_iter()
-                .enumerate()
-                .filter_map(|(idx, subgraph)| {
-                    subgraph.is_empty(&empty_subgraph_idxs).then_some(idx)
-                })
-                .collect();
-
-            let after = empty_subgraph_idxs.len();
-            
-            if before == after {
-                break;
-            }
-        }
+        let empty_subgraph_idxs = empty_subgraph_idxs(&subgraphs);
 
         let mut sreplace = HashMap::new();
         for idx in 0..subgraphs.len() {
@@ -293,4 +277,35 @@ fn make_subtree(subgraphs: &[SubGraph]) -> SubTree {
     }
 
     subtree
+}
+
+fn empty_subgraph_idxs(subgraphs: &[SubGraph]) -> HashSet<SubGraphIndex> {
+    let mut empty_subgraph_idxs: HashSet<usize> = HashSet::new();
+
+    loop {
+        let updated_empty_subgraph_idxs: HashSet<usize> = subgraphs
+            .par_iter()
+            .enumerate()
+            .filter_map(|(idx, subgraph)| {
+                let nonempty_subgraph_idxs: Vec<usize> = subgraph 
+                    .subgraph_idxs
+                    .par_iter()
+                    .filter(|idx| !empty_subgraph_idxs.contains(idx))
+                    .cloned()
+                    .collect();
+
+                let is_empty = nonempty_subgraph_idxs.is_empty() && subgraph.node_idxs.is_empty() && subgraph.edge_idxs.is_empty();
+
+                is_empty.then_some(idx)
+            })
+            .collect();
+
+        if updated_empty_subgraph_idxs.len() == empty_subgraph_idxs.len() {
+            break;
+        }
+
+        empty_subgraph_idxs = updated_empty_subgraph_idxs;
+    }
+
+    empty_subgraph_idxs
 }

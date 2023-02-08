@@ -16,17 +16,6 @@ pub struct SubGraph {
 }
 
 impl SubGraph {
-    pub fn is_empty(&self, empty_subgraph_idxs: &HashSet<SubGraphIndex>) -> bool {
-        let nonempty_subgraph_idxs: Vec<usize> = self
-            .subgraph_idxs
-            .par_iter()
-            .filter(|subgraph| !empty_subgraph_idxs.contains(subgraph))
-            .cloned()
-            .collect();
-
-        nonempty_subgraph_idxs.is_empty() && self.node_idxs.is_empty() && self.edge_idxs.is_empty()
-    }
-
     pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<NodeIndex> {
         let node_idxs = self
             .subgraph_idxs
