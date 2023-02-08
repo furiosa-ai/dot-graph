@@ -39,11 +39,11 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
             return Err(DotGraphError::UndirectedGraph(String::from(path)));
         }
 
-        Ok(parse_graph(graph))
+        parse_graph(graph)
     }
 }
 
-fn parse_graph(graph: *mut Agraph_s) -> Graph {
+fn parse_graph(graph: *mut Agraph_s) -> Result<Graph, DotGraphError> {
     let id = parse_name(graph as _);
 
     let mut subgraphs = Vec::new();

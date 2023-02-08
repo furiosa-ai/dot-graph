@@ -54,11 +54,15 @@ pub struct Graph {
 
 impl Graph {
     /// Constructs a new `graph` 
-    pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
+    pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Result<Graph, DotGraphError> {
         assert!(is_set(nodes));
         assert!(is_set(edges));
 
         let sorted_nodes = topsort(nodes, edges);
+        if sorted_nodes.len() < nodes.len() {
+            return Err(DotGraphError::Cycle(id));
+        }
+
         let nlookup = make_nlookup(&sorted_nodes);
         let nodes = sorted_nodes;
 
@@ -71,7 +75,7 @@ impl Graph {
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
         let subtree = make_subtree(&subgraphs);
 
-        Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
+        Ok(Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap })
     }
 
     /// Constructs a new `Graph`, with nodes starting with the given prefix.
