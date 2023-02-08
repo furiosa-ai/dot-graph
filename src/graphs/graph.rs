@@ -147,7 +147,7 @@ impl Graph {
             Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
             |&idx| {
                 let root = &self.subgraphs[idx];
-                let node_idxs = root.collect(&self.subgraphs);
+                let node_idxs = root.collect_nodes(&self.subgraphs);
 
                 Ok(self.extract(node_idxs))
             },
@@ -183,7 +183,7 @@ impl Graph {
         let subgraphs: Vec<SubGraph> = self
             .subgraphs
             .par_iter()
-            .map(|subgraph| subgraph.extract_nodes(&nreplace, &ereplace))
+            .map(|subgraph| subgraph.replace_node_and_edge(&nreplace, &ereplace))
             .collect();
 
         let empty_subgraph_idxs = empty_subgraph_idxs(&subgraphs);
@@ -197,7 +197,7 @@ impl Graph {
 
         let subgraphs: Vec<SubGraph> = subgraphs
             .par_iter()
-            .filter_map(|subgraph| subgraph.extract_subgraph(&sreplace))
+            .filter_map(|subgraph| subgraph.replace_subgraph(&sreplace))
             .collect();
 
         let subtree = make_subtree(&subgraphs);

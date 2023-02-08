@@ -8,21 +8,38 @@ use std::collections::{HashMap, HashSet};
 use std::io::Write;
 
 #[derive(Debug, Clone)]
+/// A `SubGraph` holds indices of its own nodes and edges,
+/// and its children subgraph.
+///
+/// ```
+/// subgraph A {
+///     subgraph B {
+///         node C
+///     }
+/// }
+/// ```
+/// In such a case, `subgraph B` holds `node C`, not `subgraph A`.
 pub struct SubGraph {
+    /// Name of the subgraph
     pub id: String,
+
+    /// Indices of its children subgraph, referenced in `Graph` 
     pub subgraph_idxs: Vec<SubGraphIndex>,
+    /// Indices of its own nodes, referened in `Graph`
     pub node_idxs: Vec<NodeIndex>,
+    /// Indices of its own edges, referenced in `Graph`
     pub edge_idxs: Vec<EdgeIndex>,
 }
 
 impl SubGraph {
-    pub fn collect(&self, subgraphs: &[SubGraph]) -> HashSet<NodeIndex> {
+    /// Collect all nodes contained in this and all its descendant subgraphs
+    pub fn collect_nodes(&self, subgraphs: &[SubGraph]) -> HashSet<NodeIndex> {
         let node_idxs = self
             .subgraph_idxs
             .iter()
             .map(|&idx| {
                 let subgraph = &subgraphs[idx];
-                subgraph.collect(subgraphs)
+                subgraph.collect_nodes(subgraphs)
             })
             .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
@@ -32,7 +49,7 @@ impl SubGraph {
         node_idxs
     }
 
-    pub fn extract_nodes(
+    pub fn replace_node_and_edge(
         &self,
         nreplace: &HashMap<NodeIndex, NodeIndex>,
         ereplace: &HashMap<EdgeIndex, EdgeIndex>,
@@ -50,7 +67,7 @@ impl SubGraph {
         SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
     }
 
-    pub fn extract_subgraph(
+    pub fn replace_subgraph(
         &self,
         sreplace: &HashMap<SubGraphIndex, SubGraphIndex>,
     ) -> Option<SubGraph> {
@@ -68,6 +85,7 @@ impl SubGraph {
         }
     }
 
+    /// Write the graph to dot format.
     pub fn to_dot<W: ?Sized>(
         &self,
         indent: usize,
