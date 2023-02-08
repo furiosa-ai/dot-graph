@@ -5,6 +5,7 @@ use crate::{
 };
 use bimap::BiMap;
 use rayon::prelude::*;
+use std::hash::Hash;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Write;
 
@@ -34,6 +35,9 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
+        assert!(is_set(nodes));
+        assert!(is_set(edges));
+
         let sorted_nodes = topsort(nodes, edges);
         let nlookup = make_nlookup(&sorted_nodes);
         let nodes = sorted_nodes;
@@ -197,6 +201,11 @@ impl Graph {
 
         root.to_dot(0, &self.subgraphs, &self.nodes, &self.edges, writer)
     }
+}
+
+fn is_set<T>(iter: T) -> bool where T: IntoIterator, T::Item: Eq + Hash {
+    let mut unique = HashSet::new();
+    iter.into_iter().all(move |x| unique.insert(x))
 }
 
 fn topsort(nodes: &[Node], edges: &[Edge]) -> Vec<Node> {
