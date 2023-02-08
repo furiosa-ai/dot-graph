@@ -170,8 +170,16 @@ impl Graph {
         })
     }
 
-    pub fn search(&self, id: &str) -> Option<&Node> {
+    pub fn search_igraph(&self, id: &str) -> Option<&SubGraph> {
+        self.slookup.get_by_left(id).map(|&idx| &self.subgraphs[idx])
+    }
+
+    pub fn search_node(&self, id: &str) -> Option<&Node> {
         self.nlookup.get_by_left(id).map(|&idx| &self.nodes[idx])
+    }
+
+    pub fn search_edge(&self, from: &str, to: &str) -> Option<&Edge> {
+        self.elookup.get_by_left(&(from.to_string(), to.to_string())).map(|&idx| &self.edges[idx])
     }
 
     pub fn froms(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
