@@ -9,7 +9,7 @@ use std::io::Write;
 
 #[derive(Debug, Clone)]
 /// A `SubGraph` holds indices of its own nodes and edges,
-/// and its children subgraph.
+/// and its children subgraphs.
 ///
 /// ```
 /// subgraph A {
@@ -23,7 +23,7 @@ pub struct SubGraph {
     /// Name of the subgraph
     pub id: String,
 
-    /// Indices of its children subgraph, referenced in `Graph` 
+    /// Indices of its children subgraphs, referenced in `Graph` 
     pub subgraph_idxs: Vec<SubGraphIndex>,
     /// Indices of its own nodes, referened in `Graph`
     pub node_idxs: Vec<NodeIndex>,

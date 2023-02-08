@@ -12,14 +12,25 @@ use std::mem::ManuallyDrop;
 use std::ptr;
 
 #[derive(Debug, Clone)]
+/// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
+/// It holds ids of its children subgraphs, nodes, and edges.
+///
+/// `SubGraph` is a more compact form of an `IGraph`, in the sense that it holds indices of
+/// children subgraphs, nodes, and edges to be referenced in `Graph`.
 pub struct IGraph {
+    /// Name of the igraph
     pub id: String,
+
+    /// Ids of its children subgraphs
     pub subgraphs: Vec<String>,
+    /// Its own nodes
     pub nodes: Vec<Node>,
+    /// Its own edges
     pub edges: Vec<Edge>,
 }
 
 impl IGraph {
+    /// Convert `IGraph` to `SubGraph`
     pub fn encode(
         &self,
         slookup: &BiMap<String, SubGraphIndex>,
