@@ -17,24 +17,43 @@ pub type EdgeIndex = usize;
 pub type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
 
 #[derive(Debug, Clone)]
+/// A `Graph` serves as a database of the entire dot graph.
+/// It holds all subgraphs, nodes, and edges in the graph as respective vectors.
+///
+/// `SubGraph`s hold indices of its children, nodes, and edges
+/// such that it can be referenced in `Graph`'s `subgraphs`, `nodes`, and `edges`.
+///
+/// **All nodes and edges in the graph MUST be UNIQUE.**
+/// Trying to initialize a `Graph` with duplicate nodes or edges will panic.
 pub struct Graph {
+    /// Name of the entire graph
     pub id: String,
 
+    /// Parent-children relationships of the subgraphs
     pub subtree: SubTree,
 
+    /// All subgraphs in the graph
     pub subgraphs: Vec<SubGraph>,
+    /// Lookup for subgraphs using subgraph id
     pub slookup: BiMap<String, SubGraphIndex>,
 
+    /// All nodes in the graph, topologically sorted (nodes must be unique)
     pub nodes: Vec<Node>,
+    /// Lookup for nodes using node id
     pub nlookup: BiMap<String, NodeIndex>,
 
+    /// All edges in the graph (edges must be unique)
     pub edges: Vec<Edge>,
+    /// Lookup for edges using edge endpoint ids, i.e, (from, to)
     pub elookup: BiMap<(String, String), EdgeIndex>,
+    /// Map constructed from edges, in forward direction
     pub fwdmap: EdgeMap,
+    /// Map constructed from edges, in backward direction
     pub bwdmap: EdgeMap,
 }
 
 impl Graph {
+    /// Constructs a new `graph` 
     pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Graph {
         assert!(is_set(nodes));
         assert!(is_set(edges));
@@ -55,6 +74,16 @@ impl Graph {
         Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap }
     }
 
+    /// Constructs a new `Graph`, with nodes starting with the given prefix.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix of node id
+    ///
+    /// # Returns
+    ///
+    /// A `Graph` wrapped in `Some` if the filter is valid, i.e., there exists some node matching
+    /// the prefix, or `None` otherwise. 
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
         let node_idxs: HashSet<NodeIndex> = self
             .nodes
@@ -66,6 +95,17 @@ impl Graph {
         self.extract(node_idxs)
     }
 
+    /// Constructs a new `Graph`, given a center node and depth limit.
+    ///
+    /// # Arguments
+    ///
+    /// * `center` - Id of the center node 
+    /// * `depth` - Depth limit of the desired neighborhood
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no node named `center`,
+    /// `Ok` with some `Graph` otherwise.
     pub fn neighbors(&self, center: &str, depth: usize) -> Result<Option<Graph>, DotGraphError> {
         self.nlookup.get_by_left(center).map_or(
             Err(DotGraphError::NoSuchNode(center.to_string(), self.id.clone())),
@@ -92,11 +132,21 @@ impl Graph {
         )
     }
 
+    /// Constructs a new `Graph`, with a new `root`.
+    ///
+    /// # Arguments
+    ///
+    /// * `root` - Id of the new root subgraph
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no subgraph named `root`,
+    /// `Ok` with some `Graph` otherwise.
     pub fn subgraph(&self, root: &str) -> Result<Option<Graph>, DotGraphError> {
         self.slookup.get_by_left(root).map_or(
             Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
-            |&root| {
-                let root = &self.subgraphs[root];
+            |&idx| {
+                let root = &self.subgraphs[idx];
                 let node_idxs = root.collect(&self.subgraphs);
 
                 Ok(self.extract(node_idxs))
@@ -104,7 +154,7 @@ impl Graph {
         )
     }
 
-    pub fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
+    fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
         if node_idxs.is_empty() {
             return None;
         }
@@ -170,18 +220,27 @@ impl Graph {
         })
     }
 
-    pub fn search_igraph(&self, id: &str) -> Option<&SubGraph> {
+    /// Search for a subgraph by id
+    pub fn search_subgraph(&self, id: &str) -> Option<&SubGraph> {
         self.slookup.get_by_left(id).map(|&idx| &self.subgraphs[idx])
     }
 
+    /// Search for a node by id
     pub fn search_node(&self, id: &str) -> Option<&Node> {
         self.nlookup.get_by_left(id).map(|&idx| &self.nodes[idx])
     }
 
+    /// Search for an edge by id
     pub fn search_edge(&self, from: &str, to: &str) -> Option<&Edge> {
         self.elookup.get_by_left(&(from.to_string(), to.to_string())).map(|&idx| &self.edges[idx])
     }
 
+    /// Retrieve all nodes that are the predecessors of the node with `id`.
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no node with `id`,
+    /// `Ok` with a set of ids of predecessor nodes.
     pub fn froms(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
         self.nlookup.get_by_left(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
@@ -193,6 +252,12 @@ impl Graph {
         )
     }
 
+    /// Retrieve all nodes that are the successors of the node with `id`.
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no node with `id`,
+    /// `Ok` with a set of ids of successor nodes.
     pub fn tos(&self, id: &str) -> Result<HashSet<&str>, DotGraphError> {
         self.nlookup.get_by_left(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
@@ -204,6 +269,7 @@ impl Graph {
         )
     }
 
+    /// Write the graph to dot format.
     pub fn to_dot<W: ?Sized>(&self, writer: &mut W) -> std::io::Result<()>
     where
         W: Write,
