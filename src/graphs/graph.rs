@@ -238,6 +238,22 @@ impl Graph {
         self.elookup.get_by_left(&(from.to_string(), to.to_string())).map(|&idx| &self.edges[idx])
     }
 
+    /// Get all children subgraphs by `id`
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no subgraph with `id`,
+    /// `Ok` with a vector of children subgraphs.
+    pub fn children(&self, id: &str) -> Result<Vec<&SubGraph>, DotGraphError> {
+        self.subtree.get(id).map_or(
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
+            |children| {
+                let children: Vec<&SubGraph> = children.par_iter().map(|id| self.search_subgraph(id).unwrap()).collect();
+                Ok(children)
+            }
+        )
+    }
+
     /// Retrieve all nodes that are the predecessors of the node with `id`.
     ///
     /// # Returns
