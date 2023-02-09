@@ -53,8 +53,13 @@ pub struct Graph {
 }
 
 impl Graph {
-    /// Constructs a new `graph` 
-    pub fn new(id: String, igraphs: &[IGraph], nodes: &[Node], edges: &[Edge]) -> Result<Graph, DotGraphError> {
+    /// Constructs a new `graph`
+    pub fn new(
+        id: String,
+        igraphs: &[IGraph],
+        nodes: &[Node],
+        edges: &[Edge],
+    ) -> Result<Graph, DotGraphError> {
         assert!(is_set(nodes));
         assert!(is_set(edges));
 
@@ -75,7 +80,18 @@ impl Graph {
             igraphs.par_iter().map(|igraph| igraph.encode(&slookup, &nlookup, &elookup)).collect();
         let subtree = make_subtree(&subgraphs);
 
-        Ok(Graph { id, subtree, subgraphs, slookup, nodes, nlookup, edges, elookup, fwdmap, bwdmap })
+        Ok(Graph {
+            id,
+            subtree,
+            subgraphs,
+            slookup,
+            nodes,
+            nlookup,
+            edges,
+            elookup,
+            fwdmap,
+            bwdmap,
+        })
     }
 
     /// Constructs a new `Graph`, with nodes starting with the given prefix.
@@ -87,7 +103,7 @@ impl Graph {
     /// # Returns
     ///
     /// A `Graph` wrapped in `Some` if the filter is valid, i.e., there exists some node matching
-    /// the prefix, or `None` otherwise. 
+    /// the prefix, or `None` otherwise.
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
         let node_idxs: HashSet<NodeIndex> = self
             .nodes
@@ -103,7 +119,7 @@ impl Graph {
     ///
     /// # Arguments
     ///
-    /// * `center` - Id of the center node 
+    /// * `center` - Id of the center node
     /// * `depth` - Depth limit of the desired neighborhood
     ///
     /// # Returns
@@ -248,9 +264,10 @@ impl Graph {
         self.subtree.get(id).map_or(
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
-                let children: Vec<&SubGraph> = children.par_iter().map(|id| self.search_subgraph(id).unwrap()).collect();
+                let children: Vec<&SubGraph> =
+                    children.par_iter().map(|id| self.search_subgraph(id).unwrap()).collect();
                 Ok(children)
-            }
+            },
         )
     }
 
@@ -265,9 +282,12 @@ impl Graph {
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
                 let subgraph = self.search_subgraph(id).unwrap();
-                let children = children.iter().map(|id| self.count_subgraphs(id).unwrap()).fold(0, |acc, count| acc + count);
+                let children = children
+                    .iter()
+                    .map(|id| self.count_subgraphs(id).unwrap())
+                    .fold(0, |acc, count| acc + count);
                 Ok(subgraph.subgraph_idxs.len() + children)
-            }
+            },
         )
     }
 
@@ -282,9 +302,12 @@ impl Graph {
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
                 let subgraph = self.search_subgraph(id).unwrap();
-                let children = children.iter().map(|id| self.count_nodes(id).unwrap()).fold(0, |acc, count| acc + count);
+                let children = children
+                    .iter()
+                    .map(|id| self.count_nodes(id).unwrap())
+                    .fold(0, |acc, count| acc + count);
                 Ok(subgraph.node_idxs.len() + children)
-            }
+            },
         )
     }
 
@@ -299,9 +322,12 @@ impl Graph {
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
                 let subgraph = self.search_subgraph(id).unwrap();
-                let children = children.iter().map(|id| self.count_edges(id).unwrap()).fold(0, |acc, count| acc + count);
+                let children = children
+                    .iter()
+                    .map(|id| self.count_edges(id).unwrap())
+                    .fold(0, |acc, count| acc + count);
                 Ok(subgraph.edge_idxs.len() + children)
-            }
+            },
         )
     }
 
@@ -437,7 +463,8 @@ fn make_subtree(subgraphs: &[SubGraph]) -> SubTree {
     let mut subtree = HashMap::new();
 
     for subgraph in subgraphs {
-        let children: HashSet<String> = subgraph.subgraph_idxs.par_iter().map(|&idx| subgraphs[idx].id.clone()).collect();
+        let children: HashSet<String> =
+            subgraph.subgraph_idxs.par_iter().map(|&idx| subgraphs[idx].id.clone()).collect();
         subtree.insert(subgraph.id.clone(), children);
     }
 

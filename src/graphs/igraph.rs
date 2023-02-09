@@ -1,10 +1,10 @@
 use crate::{
-    edge::Edge, 
+    edge::Edge,
     graphs::{
-        graph::{SubGraphIndex, NodeIndex, EdgeIndex},
+        graph::{EdgeIndex, NodeIndex, SubGraphIndex},
         subgraph::SubGraph,
-    }, 
-    node::Node
+    },
+    node::Node,
 };
 use bimap::BiMap;
 use rayon::prelude::*;

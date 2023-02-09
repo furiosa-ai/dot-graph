@@ -1,6 +1,6 @@
 use crate::{
     edge::Edge,
-    graphs::graph::{SubGraphIndex, NodeIndex, EdgeIndex},
+    graphs::graph::{EdgeIndex, NodeIndex, SubGraphIndex},
     node::Node,
 };
 use rayon::prelude::*;
@@ -23,7 +23,7 @@ pub struct SubGraph {
     /// Name of the subgraph
     pub id: String,
 
-    /// Indices of its children subgraphs, referenced in `Graph` 
+    /// Indices of its children subgraphs, referenced in `Graph`
     pub subgraph_idxs: Vec<SubGraphIndex>,
     /// Indices of its own nodes, referened in `Graph`
     pub node_idxs: Vec<NodeIndex>,
