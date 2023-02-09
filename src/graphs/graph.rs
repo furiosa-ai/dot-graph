@@ -254,6 +254,57 @@ impl Graph {
         )
     }
 
+    /// Count all subgraphs in a subgraph by `id`
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no subgraph with `id`,
+    /// `Ok` with subgraph count.
+    pub fn count_subgraphs(&self, id: &str) -> Result<usize, DotGraphError> {
+        self.subtree.get(id).map_or(
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
+            |children| {
+                let subgraph = self.search_subgraph(id).unwrap();
+                let children = children.iter().map(|id| self.count_subgraphs(id).unwrap()).fold(0, |acc, count| acc + count);
+                Ok(subgraph.subgraph_idxs.len() + children)
+            }
+        )
+    }
+
+    /// Count all nodes in a subgraph by `id`
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no subgraph with `id`,
+    /// `Ok` with node count.
+    pub fn count_nodes(&self, id: &str) -> Result<usize, DotGraphError> {
+        self.subtree.get(id).map_or(
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
+            |children| {
+                let subgraph = self.search_subgraph(id).unwrap();
+                let children = children.iter().map(|id| self.count_nodes(id).unwrap()).fold(0, |acc, count| acc + count);
+                Ok(subgraph.node_idxs.len() + children)
+            }
+        )
+    }
+
+    /// Count all edges in a subgraph by `id`
+    ///
+    /// # Returns
+    ///
+    /// `Err` if there is no subgraph with `id`,
+    /// `Ok` with edge count.
+    pub fn count_edges(&self, id: &str) -> Result<usize, DotGraphError> {
+        self.subtree.get(id).map_or(
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
+            |children| {
+                let subgraph = self.search_subgraph(id).unwrap();
+                let children = children.iter().map(|id| self.count_edges(id).unwrap()).fold(0, |acc, count| acc + count);
+                Ok(subgraph.edge_idxs.len() + children)
+            }
+        )
+    }
+
     /// Retrieve all nodes that are the predecessors of the node with `id`.
     ///
     /// # Returns
