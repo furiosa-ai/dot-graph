@@ -14,7 +14,7 @@ pub type IGraphIndex = usize;
 pub type SubGraphIndex = usize;
 pub type NodeIndex = usize;
 pub type EdgeIndex = usize;
-pub type SubTree = HashMap<SubGraphIndex, Vec<SubGraphIndex>>;
+pub type SubTree = HashMap<String, HashSet<String>>;
 
 #[derive(Debug, Clone)]
 /// A `Graph` serves as a database of the entire dot graph.
@@ -118,14 +118,13 @@ impl Graph {
                 let mut frontier: VecDeque<(NodeIndex, usize)> = VecDeque::new();
                 frontier.push_back((*center, 0));
 
-                let empty = HashSet::new();
                 while let Some((node, vicinity)) = frontier.pop_front() {
                     if vicinity > depth || !visited.insert(node) {
                         continue;
                     }
 
-                    let tos = self.fwdmap.get(&node).unwrap_or(&empty);
-                    let froms = self.bwdmap.get(&node).unwrap_or(&empty);
+                    let tos = self.fwdmap.get(&node).unwrap();
+                    let froms = self.bwdmap.get(&node).unwrap();
                     let nexts = tos.union(froms);
 
                     frontier.extend(nexts.map(|&next| (next, vicinity + 1)));
@@ -224,17 +223,17 @@ impl Graph {
         })
     }
 
-    /// Search for a subgraph by id
+    /// Search for a subgraph by `id`
     pub fn search_subgraph(&self, id: &str) -> Option<&SubGraph> {
         self.slookup.get_by_left(id).map(|&idx| &self.subgraphs[idx])
     }
 
-    /// Search for a node by id
+    /// Search for a node by `id`
     pub fn search_node(&self, id: &str) -> Option<&Node> {
         self.nlookup.get_by_left(id).map(|&idx| &self.nodes[idx])
     }
 
-    /// Search for an edge by id
+    /// Search for an edge by `from`, `to` ids
     pub fn search_edge(&self, from: &str, to: &str) -> Option<&Edge> {
         self.elookup.get_by_left(&(from.to_string(), to.to_string())).map(|&idx| &self.edges[idx])
     }
@@ -249,7 +248,7 @@ impl Graph {
         self.nlookup.get_by_left(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
             |idx| {
-                let froms = self.bwdmap.get(idx).cloned().unwrap_or_default();
+                let froms = self.bwdmap.get(idx).cloned().unwrap();
                 let froms = (froms.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
                 Ok(froms)
             },
@@ -266,7 +265,7 @@ impl Graph {
         self.nlookup.get_by_left(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
             |idx| {
-                let tos = self.fwdmap.get(idx).cloned().unwrap_or_default();
+                let tos = self.fwdmap.get(idx).cloned().unwrap();
                 let tos = (tos.iter()).map(|&idx| self.nodes[idx].id.as_str()).collect();
                 Ok(tos)
             },
@@ -359,16 +358,20 @@ fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<String, NodeIndex>) -> (EdgeMa
         bwdmap.entry(to).or_default().insert(from);
     }
 
+    for &idx in nlookup.right_values() {
+        fwdmap.entry(idx).or_insert(HashSet::new());
+        bwdmap.entry(idx).or_insert(HashSet::new());
+    }
+
     (fwdmap, bwdmap)
 }
 
 fn make_subtree(subgraphs: &[SubGraph]) -> SubTree {
     let mut subtree = HashMap::new();
 
-    for (idx, subgraph) in subgraphs.iter().enumerate() {
-        if !subgraph.subgraph_idxs.is_empty() {
-            subtree.insert(idx, subgraph.subgraph_idxs.clone());
-        }
+    for subgraph in subgraphs {
+        let children: HashSet<String> = subgraph.subgraph_idxs.par_iter().map(|&idx| subgraphs[idx].id.clone()).collect();
+        subtree.insert(subgraph.id.clone(), children);
     }
 
     subtree
