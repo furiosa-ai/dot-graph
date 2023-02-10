@@ -52,7 +52,7 @@ impl Graph {
         edges: &[Edge],
     ) -> Result<Graph, DotGraphError> {
         assert!(is_set(nodes));
-        assert!(is_set(edges)); 
+        assert!(is_set(edges));
 
         let subgraphs: HashSet<SubGraph> = root.encode();
         let nodes: HashSet<Node> = nodes.par_iter().cloned().collect();
@@ -62,15 +62,7 @@ impl Graph {
 
         let subtree = make_subtree(&subgraphs);
 
-        Ok(Graph {
-            id,
-            subgraphs,
-            nodes,
-            edges,
-            subtree,
-            fwdmap,
-            bwdmap,
-        })
+        Ok(Graph { id, subgraphs, nodes, edges, subtree, fwdmap, bwdmap })
     }
 
     /// Topologically sort nodes in this `Graph`.
@@ -190,7 +182,7 @@ impl Graph {
 
         let mut nodes = HashSet::new();
         for id in node_ids {
-            if let Some(node) = self.search_node(&id) {
+            if let Some(node) = self.search_node(id) {
                 nodes.insert(node.clone());
             }
         }
@@ -213,26 +205,24 @@ impl Graph {
             .collect();
 
         let empty_subgraph_ids = empty_subgraph_ids(&subgraphs);
-        let subgraph_ids: HashSet<&GraphId> = self.subgraphs.par_iter().filter_map(|subgraph| (!empty_subgraph_ids.contains(&subgraph.id)).then_some(&subgraph.id)).collect();
+        let subgraph_ids: HashSet<&GraphId> = self
+            .subgraphs
+            .par_iter()
+            .filter_map(|subgraph| {
+                (!empty_subgraph_ids.contains(&subgraph.id)).then_some(&subgraph.id)
+            })
+            .collect();
 
         let subgraphs: HashSet<SubGraph> = subgraphs
             .par_iter()
             .filter_map(|subgraph| subgraph.extract_subgraph(&subgraph_ids))
             .collect();
-        
+
         let (fwdmap, bwdmap) = make_edge_maps(&nodes, &edges);
 
         let subtree = make_subtree(&subgraphs);
 
-        Some(Graph {
-            id: self.id.clone(),
-            subgraphs,
-            nodes,
-            edges,
-            subtree,
-            fwdmap,
-            bwdmap,
-        })
+        Some(Graph { id: self.id.clone(), subgraphs, nodes, edges, subtree, fwdmap, bwdmap })
     }
 
     /// Search for a subgraph by `id`
@@ -283,7 +273,8 @@ impl Graph {
                     .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_nodes: HashSet<&Node> = subgraph.node_ids.par_iter().map(|id| self.search_node(id).unwrap()).collect();
+                let subgraph_nodes: HashSet<&Node> =
+                    subgraph.node_ids.par_iter().map(|id| self.search_node(id).unwrap()).collect();
 
                 let nodes = subgraph_nodes.union(&children_nodes).cloned().collect();
 
@@ -297,7 +288,7 @@ impl Graph {
     /// # Returns
     ///
     /// `Err` if there is no subgraph with `id`,
-    /// `Ok` with collected edges. 
+    /// `Ok` with collected edges.
     pub fn collect_edges(&self, id: &GraphId) -> Result<HashSet<&Edge>, DotGraphError> {
         self.subtree.get(id).map_or(
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
@@ -308,7 +299,8 @@ impl Graph {
                     .fold(HashSet::new(), |acc, edges| acc.union(&edges).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_edges: HashSet<&Edge> = subgraph.edge_ids.par_iter().map(|id| self.search_edge(id).unwrap()).collect();
+                let subgraph_edges: HashSet<&Edge> =
+                    subgraph.edge_ids.par_iter().map(|id| self.search_edge(id).unwrap()).collect();
 
                 let edges = subgraph_edges.union(&children_edges).cloned().collect();
 
@@ -324,10 +316,11 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of predecessor nodes.
     pub fn froms(&self, id: &NodeId) -> Result<HashSet<NodeId>, DotGraphError> {
-        self.bwdmap.get(id).map_or(
-            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |froms| Ok(froms.clone())
-        )
+        self.bwdmap
+            .get(id)
+            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |froms| {
+                Ok(froms.clone())
+            })
     }
 
     /// Retrieve all nodes that are the successors of the node with `id`.
@@ -337,10 +330,11 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of successor nodes.
     pub fn tos(&self, id: &NodeId) -> Result<HashSet<NodeId>, DotGraphError> {
-        self.fwdmap.get(id).map_or(
-            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |tos| Ok(tos.clone())
-        )
+        self.fwdmap
+            .get(id)
+            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |tos| {
+                Ok(tos.clone())
+            })
     }
 
     /// Write the graph to dot format.
@@ -350,7 +344,7 @@ impl Graph {
     {
         let root = self.subgraphs.get(&self.id).unwrap();
 
-        root.to_dot(&self, 0, writer)
+        root.to_dot(self, 0, writer)
     }
 }
 
@@ -377,8 +371,8 @@ fn make_edge_maps(nodes: &HashSet<Node>, edges: &HashSet<Edge>) -> (EdgeMap, Edg
     for node in nodes {
         let id = &node.id;
 
-        fwdmap.entry(id.clone()).or_insert(HashSet::new());
-        bwdmap.entry(id.clone()).or_insert(HashSet::new());
+        fwdmap.entry(id.clone()).or_default();
+        bwdmap.entry(id.clone()).or_default();
     }
 
     (fwdmap, bwdmap)

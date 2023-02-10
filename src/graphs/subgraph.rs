@@ -55,18 +55,18 @@ impl SubGraph {
 
         let subgraph_ids = self.subgraph_ids.clone();
 
-        let node_ids: HashSet<NodeId> = self.node_ids.par_iter().filter(|id| node_ids.contains(id)).cloned().collect();
+        let node_ids: HashSet<NodeId> =
+            self.node_ids.par_iter().filter(|id| node_ids.contains(id)).cloned().collect();
 
-        let edge_ids: HashSet<EdgeId> = self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
+        let edge_ids: HashSet<EdgeId> =
+            self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
 
         SubGraph { id, subgraph_ids, node_ids, edge_ids }
     }
 
-    pub fn extract_subgraph(
-        &self,
-        subgraph_ids: &HashSet<&GraphId>,
-    ) -> Option<SubGraph> {
-        let subgraph_ids: HashSet<GraphId> = self.subgraph_ids.par_iter().filter(|id| subgraph_ids.contains(id)).cloned().collect();
+    pub fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
+        let subgraph_ids: HashSet<GraphId> =
+            self.subgraph_ids.par_iter().filter(|id| subgraph_ids.contains(id)).cloned().collect();
 
         if subgraph_ids.is_empty() && self.node_ids.is_empty() && self.edge_ids.is_empty() {
             None

@@ -1,15 +1,12 @@
 use crate::{
     edge::{Edge, EdgeId},
-    graphs::{
-        graph::GraphId,
-        subgraph::SubGraph,
-    },
+    graphs::{graph::GraphId, subgraph::SubGraph},
     node::{Node, NodeId},
 };
+use rayon::prelude::*;
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use rayon::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
@@ -44,23 +41,24 @@ impl Borrow<GraphId> for IGraph {
 impl IGraph {
     /// Convert `IGraph` to a set of `SubGraph`s, an unfolded subgraph tree
     pub fn encode(&self) -> HashSet<SubGraph> {
-        let mut subgraphs = self.igraphs.iter().map(|igraph| igraph.encode()).fold(HashSet::new(), |acc, subgraphs| acc.union(&subgraphs).cloned().collect());
+        let mut subgraphs = self
+            .igraphs
+            .iter()
+            .map(|igraph| igraph.encode())
+            .fold(HashSet::new(), |acc, subgraphs| acc.union(&subgraphs).cloned().collect());
 
         let id = self.id.clone();
 
-        let subgraph_ids: HashSet<GraphId> = (self.igraphs.par_iter())
-            .map(|igraph| igraph.id.clone())
-            .collect();
+        let subgraph_ids: HashSet<GraphId> =
+            (self.igraphs.par_iter()).map(|igraph| igraph.id.clone()).collect();
 
-        let node_ids: HashSet<NodeId> = (self.nodes.par_iter())
-            .map(|node| node.id.clone())
-            .collect();
+        let node_ids: HashSet<NodeId> =
+            (self.nodes.par_iter()).map(|node| node.id.clone()).collect();
 
-        let edge_ids: HashSet<EdgeId> = (self.edges.par_iter())
-            .map(|edge| edge.id.clone())
-            .collect();
+        let edge_ids: HashSet<EdgeId> =
+            (self.edges.par_iter()).map(|edge| edge.id.clone()).collect();
 
-        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids }; 
+        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids };
 
         subgraphs.insert(subgraph);
 
