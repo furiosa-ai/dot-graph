@@ -21,8 +21,8 @@ pub struct IGraph {
     /// Name of the igraph
     pub id: GraphId,
 
-    /// Ids of its children subgraphs
-    pub subgraphs: HashSet<GraphId>,
+    /// Its children subgraphs
+    pub igraphs: HashSet<IGraph>,
     /// Its own nodes
     pub nodes: HashSet<Node>,
     /// Its own edges
@@ -42,11 +42,15 @@ impl Borrow<GraphId> for IGraph {
 }
 
 impl IGraph {
-    /// Convert `IGraph` to `SubGraph`
-    pub fn encode(&self) -> SubGraph {
+    /// Convert `IGraph` to a set of `SubGraph`s, an unfolded subgraph tree
+    pub fn encode(&self) -> HashSet<SubGraph> {
+        let mut subgraphs = self.igraphs.iter().map(|igraph| igraph.encode()).fold(HashSet::new(), |acc, subgraphs| acc.union(&subgraphs).cloned().collect());
+
         let id = self.id.clone();
 
-        let subgraph_ids: HashSet<GraphId> = self.subgraphs.clone();
+        let subgraph_ids: HashSet<GraphId> = (self.igraphs.par_iter())
+            .map(|igraph| igraph.id.clone())
+            .collect();
 
         let node_ids: HashSet<NodeId> = (self.nodes.par_iter())
             .map(|node| node.id.clone())
@@ -56,6 +60,10 @@ impl IGraph {
             .map(|edge| edge.id.clone())
             .collect();
 
-        SubGraph { id, subgraph_ids, node_ids, edge_ids }
+        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids }; 
+
+        subgraphs.insert(subgraph);
+
+        subgraphs
     }
 }

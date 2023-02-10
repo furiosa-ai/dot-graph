@@ -46,29 +46,26 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
 fn parse_graph(graph: *mut Agraph_s) -> Result<Graph, DotGraphError> {
     let id = parse_name(graph as _);
 
-    let mut subgraphs = Vec::new();
     let mut nodes = HashSet::new();
     let mut edges = HashSet::new();
-    parse_igraph(graph, &mut subgraphs, &mut nodes, &mut edges);
+    let root = parse_igraph(graph, &mut nodes, &mut edges);
 
-    Graph::new(id, &subgraphs, &Vec::from_iter(nodes), &Vec::from_iter(edges))
+    Graph::new(id, &root, &Vec::from_iter(nodes), &Vec::from_iter(edges))
 }
 
 fn parse_igraph(
     graph: *mut Agraph_s,
-    subgraphs_visited: &mut Vec<IGraph>,
     nodes_visited: &mut HashSet<Node>,
     edges_visited: &mut HashSet<Edge>,
-) {
+) -> IGraph {
     let id = parse_name(graph as _);
 
     // parse subgraphs
-    let mut subgraphs = HashSet::new();
+    let mut igraphs = HashSet::new();
     unsafe {
         let mut subgraph = agfstsubg(graph);
         while !subgraph.is_null() {
-            parse_igraph(subgraph, subgraphs_visited, nodes_visited, edges_visited);
-            subgraphs.insert(subgraphs_visited.last().unwrap().id.clone());
+            igraphs.insert(parse_igraph(subgraph, nodes_visited, edges_visited));
             subgraph = agnxtsubg(subgraph);
         }
     };
@@ -115,9 +112,7 @@ fn parse_igraph(
         }
     };
 
-    let subgraph = IGraph { id, subgraphs, nodes, edges };
-
-    subgraphs_visited.push(subgraph);
+    IGraph { id, igraphs, nodes, edges }
 }
 
 fn parse_node(

@@ -47,15 +47,14 @@ impl Graph {
     /// Constructs a new `graph`
     pub fn new(
         id: GraphId,
-        igraphs: &[IGraph],
+        root: &IGraph,
         nodes: &[Node],
         edges: &[Edge],
     ) -> Result<Graph, DotGraphError> {
-        assert!(is_set(igraphs));
         assert!(is_set(nodes));
         assert!(is_set(edges)); 
 
-        let subgraphs: HashSet<SubGraph> = igraphs.par_iter().map(|igraph| igraph.encode()).collect();
+        let subgraphs: HashSet<SubGraph> = root.encode();
         let nodes: HashSet<Node> = nodes.par_iter().cloned().collect();
         let edges: HashSet<Edge> = edges.par_iter().cloned().collect();
 
