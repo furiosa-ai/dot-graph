@@ -75,29 +75,29 @@ impl Graph {
 
     /// Topologically sort nodes in this `Graph`.
     pub fn topsort(&self) -> Vec<NodeId> {
-        let mut indegrees: HashMap<NodeId, usize> = HashMap::new();
+        let mut indegrees: HashMap<&NodeId, usize> = HashMap::new();
         for (to, froms) in &self.bwdmap {
-            indegrees.insert(to.clone(), froms.len());
+            indegrees.insert(to, froms.len());
         }
 
-        let mut visited: HashSet<NodeId> = HashSet::new();
+        let mut visited: HashSet<&NodeId> = HashSet::new();
 
         let mut queue = VecDeque::new();
-        for (node, _) in indegrees.iter().filter(|&(_, &indegree)| indegree == 0) {
-            queue.push_back(node.clone());
-            visited.insert(node.clone());
+        for (&node, _) in indegrees.iter().filter(|&(_, &indegree)| indegree == 0) {
+            queue.push_back(node);
+            visited.insert(node);
         }
 
         let mut sorted = Vec::new();
         while let Some(id) = queue.pop_front() {
             sorted.push(id.clone());
-            if let Some(tos) = self.fwdmap.get(&id) {
+            if let Some(tos) = self.fwdmap.get(id) {
                 for to in tos {
                     let indegree = indegrees.get_mut(to).unwrap();
                     *indegree -= 1;
                     if *indegree == 0 {
-                        queue.push_back(to.clone());
-                        visited.insert(to.clone());
+                        queue.push_back(to);
+                        visited.insert(to);
                     }
                 }
             }
@@ -117,10 +117,10 @@ impl Graph {
     /// A `Graph` wrapped in `Some` if the filter is valid, i.e., there exists some node matching
     /// the prefix, or `None` otherwise.
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let node_ids: HashSet<NodeId> = self
+        let node_ids: HashSet<&NodeId> = self
             .nodes
             .par_iter()
-            .filter_map(|node| node.id.starts_with(prefix).then_some(node.id.clone()))
+            .filter_map(|node| node.id.starts_with(prefix).then_some(&node.id))
             .collect();
 
         self.extract(&node_ids)
@@ -142,19 +142,19 @@ impl Graph {
             Err(DotGraphError::NoSuchNode(center.clone(), self.id.clone())),
             |_| {
                 let mut visited = HashSet::new();
-                let mut frontier: VecDeque<(NodeId, usize)> = VecDeque::new();
-                frontier.push_back((center.clone(), 0));
+                let mut frontier: VecDeque<(&NodeId, usize)> = VecDeque::new();
+                frontier.push_back((center, 0));
 
                 while let Some((id, vicinity)) = frontier.pop_front() {
-                    if vicinity > depth || !visited.insert(id.clone()) {
+                    if vicinity > depth || !visited.insert(id) {
                         continue;
                     }
 
-                    let tos = self.fwdmap.get(&id).unwrap();
-                    let froms = self.bwdmap.get(&id).unwrap();
+                    let tos = self.fwdmap.get(id).unwrap();
+                    let froms = self.bwdmap.get(id).unwrap();
                     let nexts = tos.union(froms);
 
-                    frontier.extend(nexts.map(|next| (next.clone(), vicinity + 1)));
+                    frontier.extend(nexts.map(|next| (next, vicinity + 1)));
                 }
 
                 Ok(self.extract(&visited))
@@ -176,14 +176,14 @@ impl Graph {
         self.collect_nodes(root).map_or(
             Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
             |nodes| {
-                let node_ids = nodes.par_iter().map(|node| node.id.clone()).collect();
+                let node_ids = nodes.par_iter().map(|node| &node.id).collect();
 
                 Ok(self.extract(&node_ids))
             },
         )
     }
 
-    fn extract(&self, node_ids: &HashSet<NodeId>) -> Option<Graph> {
+    fn extract(&self, node_ids: &HashSet<&NodeId>) -> Option<Graph> {
         if node_ids.is_empty() {
             return None;
         }
