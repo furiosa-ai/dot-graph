@@ -8,7 +8,7 @@ use crate::{
     graphs::{Graph, IGraph},
     node::Node,
 };
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
 
 unsafe fn c_to_rust_string(ptr: *const i8) -> String {
@@ -63,12 +63,12 @@ fn parse_igraph(
     let id = parse_name(graph as _);
 
     // parse subgraphs
-    let mut subgraphs = Vec::new();
+    let mut subgraphs = HashSet::new();
     unsafe {
         let mut subgraph = agfstsubg(graph);
         while !subgraph.is_null() {
             parse_igraph(subgraph, subgraphs_visited, nodes_visited, edges_visited);
-            subgraphs.push(subgraphs_visited.last().unwrap().id.clone());
+            subgraphs.insert(subgraphs_visited.last().unwrap().id.clone());
             subgraph = agnxtsubg(subgraph);
         }
     };
@@ -94,20 +94,20 @@ fn parse_igraph(
     };
 
     // parse nodes and edges
-    let mut nodes = Vec::new();
-    let mut edges = Vec::new();
+    let mut nodes = HashSet::new();
+    let mut edges = HashSet::new();
     unsafe {
         let mut node = agfstnode(graph);
         while !node.is_null() {
             let (n, es) = parse_node(node, graph, &nkeys, &ekeys);
             if !nodes_visited.contains(&n) {
                 nodes_visited.insert(n.clone());
-                nodes.push(n);
+                nodes.insert(n);
             }
             for e in es {
                 if !edges_visited.contains(&e) {
                     edges_visited.insert(e.clone());
-                    edges.push(e);
+                    edges.insert(e);
                 }
             }
 
@@ -128,7 +128,7 @@ fn parse_node(
 ) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
 
-    let mut attrs = BTreeMap::new();
+    let mut attrs = HashMap::new();
     for &key in nkeys {
         let (key, value) = unsafe {
             let value = agget(node as _, key);
@@ -158,8 +158,9 @@ fn parse_node(
 fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Edge {
     let from = parse_name(node as _);
     let to = unsafe { parse_name((*edge).node as _) };
+    let id = (from, to);
 
-    let mut attrs = BTreeMap::new();
+    let mut attrs = HashMap::new();
     for &key in ekeys {
         let (key, value) = unsafe {
             let value = agget(edge as _, key);
@@ -170,7 +171,7 @@ fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Ed
         }
     }
 
-    Edge { from, to, attrs }
+    Edge { id, attrs }
 }
 
 fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {

@@ -1,22 +1,33 @@
-use crate::graphs::graph::NodeIndex;
 use crate::node::NodeId;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::borrow::Borrow;
+use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::io::{Result, Write};
 
 pub type EdgeId = (NodeId, NodeId);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An (directed) `Edge` of a graph.
 pub struct Edge {
-    /// Id of the start point node
-    pub from: NodeId,
-    /// Id of the end point node
-    pub to: NodeId,
+    /// A tuple of start and end points
+    pub id: EdgeId,
     /// Attributes of the edge in key, value mappings
-    pub attrs: BTreeMap<String, String>,
+    pub attrs: HashMap<String, String>,
 }
 
-pub type EdgeMap = HashMap<NodeIndex, HashSet<NodeIndex>>;
+impl Hash for Edge {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Borrow<EdgeId> for Edge {
+    fn borrow(&self) -> &EdgeId {
+        &self.id
+    }
+}
 
 impl Edge {
     /// Write the edge to dot format
@@ -27,7 +38,7 @@ impl Edge {
         let tabs = "\t".repeat(indent);
         let mut ports = Vec::with_capacity(2);
 
-        write!(writer, "{}{}", tabs, self.from)?;
+        write!(writer, "{}{}", tabs, self.id.0)?;
 
         let tailport = self.attrs.get("tailport");
         if let Some(tailport) = tailport {
@@ -35,7 +46,7 @@ impl Edge {
             ports.push("tailport");
         }
 
-        write!(writer, " -> {}", self.to)?;
+        write!(writer, " -> {}", self.id.1)?;
 
         let headport = self.attrs.get("headport");
         if let Some(headport) = headport {

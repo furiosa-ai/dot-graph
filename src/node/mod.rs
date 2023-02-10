@@ -1,15 +1,29 @@
-use std::collections::BTreeMap;
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::io::{Result, Write};
 
 pub type NodeId = String;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// A `Node` of a graph.
 pub struct Node {
     /// Name of the node
     pub id: NodeId,
     /// Attributes of the node in key, value mappings
-    pub attrs: BTreeMap<String, String>,
+    pub attrs: HashMap<String, String>,
+}
+
+impl Hash for Node {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Borrow<NodeId> for Node {
+    fn borrow(&self) -> &NodeId {
+        &self.id
+    }
 }
 
 impl Node {
