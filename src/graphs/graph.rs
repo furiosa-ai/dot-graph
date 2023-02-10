@@ -194,6 +194,7 @@ impl Graph {
                 nodes.insert(node.clone());
             }
         }
+        let node_ids: HashSet<&NodeId> = nodes.par_iter().map(|node| &node.id).collect();
 
         let mut edges = HashSet::new();
         for edge in &self.edges {
@@ -203,18 +204,20 @@ impl Graph {
                 edges.insert(edge.clone());
             }
         }
+        let edge_ids: HashSet<&EdgeId> = edges.par_iter().map(|edge| &edge.id).collect();
 
         let subgraphs: HashSet<SubGraph> = self
             .subgraphs
             .par_iter()
-            .map(|subgraph| subgraph.extract_node_and_edge(&nodes, &edges))
+            .map(|subgraph| subgraph.extract_nodes_and_edges(&node_ids, &edge_ids))
             .collect();
 
         let empty_subgraph_ids = empty_subgraph_ids(&subgraphs);
+        let subgraph_ids: HashSet<&GraphId> = self.subgraphs.par_iter().filter_map(|subgraph| (!empty_subgraph_ids.contains(&subgraph.id)).then_some(&subgraph.id)).collect();
 
         let subgraphs: HashSet<SubGraph> = subgraphs
             .par_iter()
-            .filter_map(|subgraph| subgraph.extract_subgraph(&empty_subgraph_ids))
+            .filter_map(|subgraph| subgraph.extract_subgraph(&subgraph_ids))
             .collect();
         
         let (fwdmap, bwdmap) = make_edge_maps(&nodes, &edges);
@@ -347,7 +350,7 @@ impl Graph {
     {
         let root = self.subgraphs.get(&self.id).unwrap();
 
-        root.to_dot(0, &self, writer)
+        root.to_dot(&self, 0, writer)
     }
 }
 
@@ -385,7 +388,7 @@ fn make_subtree(subgraphs: &HashSet<SubGraph>) -> SubTree {
     let mut subtree = HashMap::new();
 
     for subgraph in subgraphs {
-        let children: HashSet<String> = subgraph.subgraph_ids.par_iter().cloned().collect();
+        let children: HashSet<GraphId> = subgraph.subgraph_ids.par_iter().cloned().collect();
         subtree.insert(subgraph.id.clone(), children);
     }
 
