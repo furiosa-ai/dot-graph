@@ -123,7 +123,7 @@ impl Graph {
             .filter_map(|node| node.id.starts_with(prefix).then_some(node.id.clone()))
             .collect();
 
-        self.extract(node_ids)
+        self.extract(&node_ids)
     }
 
     /// Constructs a new `Graph`, given a center node and depth limit.
@@ -157,7 +157,7 @@ impl Graph {
                     frontier.extend(nexts.map(|next| (next.clone(), vicinity + 1)));
                 }
 
-                Ok(self.extract(visited))
+                Ok(self.extract(&visited))
             },
         )
     }
@@ -178,12 +178,12 @@ impl Graph {
             |nodes| {
                 let node_ids = nodes.par_iter().map(|node| node.id.clone()).collect();
 
-                Ok(self.extract(node_ids))
+                Ok(self.extract(&node_ids))
             },
         )
     }
 
-    fn extract(&self, node_ids: HashSet<NodeId>) -> Option<Graph> {
+    fn extract(&self, node_ids: &HashSet<NodeId>) -> Option<Graph> {
         if node_ids.is_empty() {
             return None;
         }
@@ -199,7 +199,7 @@ impl Graph {
         for edge in &self.edges {
             let (from, to) = &edge.id;
 
-            if self.search_node(from).is_some() && self.search_node(to).is_some() {
+            if node_ids.get(from).is_some() && node_ids.get(to).is_some() {
                 edges.insert(edge.clone());
             }
         }
