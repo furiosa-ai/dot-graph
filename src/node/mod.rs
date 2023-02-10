@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
 use std::io::{Result, Write};
 
+pub type NodeId = String;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// A `Node` of a graph.
 pub struct Node {
     /// Name of the node
-    pub id: String,
+    pub id: NodeId,
     /// Attributes of the node in key, value mappings
     pub attrs: BTreeMap<String, String>,
 }

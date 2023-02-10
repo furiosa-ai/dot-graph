@@ -1,7 +1,7 @@
 use crate::{
-    edge::{Edge, EdgeMap},
-    graphs::{igraph::IGraph, subgraph::SubGraph},
-    node::Node,
+    edge::{Edge, EdgeId, EdgeMap},
+    graphs::{igraph::IGraph, subgraph::{SubGraph, GraphId}},
+    node::{Node, NodeId},
     DotGraphError,
 };
 use bimap::BiMap;
@@ -27,7 +27,7 @@ pub type SubTree = HashMap<String, HashSet<String>>;
 /// Trying to initialize a `Graph` with duplicate nodes or edges will panic.
 pub struct Graph {
     /// Name of the entire graph
-    pub id: String,
+    pub id: GraphId,
 
     /// Parent-children relationships of the subgraphs
     pub subtree: SubTree,
@@ -35,27 +35,27 @@ pub struct Graph {
     /// All subgraphs in the graph
     pub subgraphs: Vec<SubGraph>,
     /// Lookup for subgraphs using subgraph id
-    pub slookup: BiMap<String, SubGraphIndex>,
+    slookup: BiMap<GraphId, SubGraphIndex>,
 
     /// All nodes in the graph, topologically sorted (nodes must be unique)
     pub nodes: Vec<Node>,
     /// Lookup for nodes using node id
-    pub nlookup: BiMap<String, NodeIndex>,
+    nlookup: BiMap<NodeId, NodeIndex>,
 
     /// All edges in the graph (edges must be unique)
     pub edges: Vec<Edge>,
     /// Lookup for edges using edge endpoint ids, i.e, (from, to)
-    pub elookup: BiMap<(String, String), EdgeIndex>,
+    elookup: BiMap<EdgeId, EdgeIndex>,
     /// Map constructed from edges, in forward direction
-    pub fwdmap: EdgeMap,
+    fwdmap: EdgeMap,
     /// Map constructed from edges, in backward direction
-    pub bwdmap: EdgeMap,
+    bwdmap: EdgeMap,
 }
 
 impl Graph {
     /// Constructs a new `graph`
     pub fn new(
-        id: String,
+        id: GraphId,
         igraphs: &[IGraph],
         nodes: &[Node],
         edges: &[Edge],
@@ -105,14 +105,14 @@ impl Graph {
     /// A `Graph` wrapped in `Some` if the filter is valid, i.e., there exists some node matching
     /// the prefix, or `None` otherwise.
     pub fn filter(&self, prefix: &str) -> Option<Graph> {
-        let node_idxs: HashSet<NodeIndex> = self
+        let node_ids: HashSet<NodeIndex> = self
             .nodes
             .par_iter()
             .enumerate()
             .filter_map(|(idx, node)| node.id.starts_with(prefix).then_some(idx))
             .collect();
 
-        self.extract(node_idxs)
+        self.extract(node_ids)
     }
 
     /// Constructs a new `Graph`, given a center node and depth limit.
@@ -166,22 +166,22 @@ impl Graph {
             Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
             |&idx| {
                 let root = &self.subgraphs[idx];
-                let node_idxs = root.collect_nodes(&self.subgraphs);
+                let node_ids = root.collect_nodes(&self.subgraphs);
 
-                Ok(self.extract(node_idxs))
+                Ok(self.extract(node_ids))
             },
         )
     }
 
-    fn extract(&self, node_idxs: HashSet<NodeIndex>) -> Option<Graph> {
-        if node_idxs.is_empty() {
+    fn extract(&self, node_ids: HashSet<NodeIndex>) -> Option<Graph> {
+        if node_ids.is_empty() {
             return None;
         }
 
         let mut nodes = Vec::new();
         let mut nreplace = HashMap::new();
         for (idx, node) in self.nodes.iter().enumerate() {
-            if node_idxs.contains(&idx) {
+            if node_ids.contains(&idx) {
                 nodes.push(node.clone());
                 nreplace.insert(idx, nreplace.len());
             }
@@ -193,7 +193,7 @@ impl Graph {
             let from = self.nlookup.get_by_left(&edge.from).unwrap();
             let to = self.nlookup.get_by_left(&edge.to).unwrap();
 
-            if node_idxs.contains(from) && node_idxs.contains(to) {
+            if node_ids.contains(from) && node_ids.contains(to) {
                 edges.push(edge.clone());
                 ereplace.insert(idx, ereplace.len());
             }
@@ -205,11 +205,11 @@ impl Graph {
             .map(|subgraph| subgraph.replace_node_and_edge(&nreplace, &ereplace))
             .collect();
 
-        let empty_subgraph_idxs = empty_subgraph_idxs(&subgraphs);
+        let empty_subgraph_ids = empty_subgraph_ids(&subgraphs);
 
         let mut sreplace = HashMap::new();
         for idx in 0..subgraphs.len() {
-            if !empty_subgraph_idxs.contains(&idx) {
+            if !empty_subgraph_ids.contains(&idx) {
                 sreplace.insert(idx, sreplace.len());
             }
         }
@@ -286,7 +286,7 @@ impl Graph {
                     .iter()
                     .map(|id| self.count_subgraphs(id).unwrap())
                     .fold(0, |acc, count| acc + count);
-                Ok(subgraph.subgraph_idxs.len() + children)
+                Ok(subgraph.subgraph_ids.len() + children)
             },
         )
     }
@@ -306,7 +306,7 @@ impl Graph {
                     .iter()
                     .map(|id| self.count_nodes(id).unwrap())
                     .fold(0, |acc, count| acc + count);
-                Ok(subgraph.node_idxs.len() + children)
+                Ok(subgraph.node_ids.len() + children)
             },
         )
     }
@@ -326,7 +326,7 @@ impl Graph {
                     .iter()
                     .map(|id| self.count_edges(id).unwrap())
                     .fold(0, |acc, count| acc + count);
-                Ok(subgraph.edge_idxs.len() + children)
+                Ok(subgraph.edge_ids.len() + children)
             },
         )
     }
@@ -421,25 +421,25 @@ fn topsort(nodes: &[Node], edges: &[Edge]) -> Vec<Node> {
     sorted
 }
 
-fn make_ilookup(subgraphs: &[IGraph]) -> BiMap<String, IGraphIndex> {
+fn make_ilookup(subgraphs: &[IGraph]) -> BiMap<GraphId, IGraphIndex> {
     (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
 }
 
-fn make_slookup(subgraphs: &[SubGraph]) -> BiMap<String, SubGraphIndex> {
+fn make_slookup(subgraphs: &[SubGraph]) -> BiMap<GraphId, SubGraphIndex> {
     (subgraphs.iter().enumerate()).map(|(idx, subgraph)| (subgraph.id.clone(), idx)).collect()
 }
 
-fn make_nlookup(nodes: &[Node]) -> BiMap<String, NodeIndex> {
+fn make_nlookup(nodes: &[Node]) -> BiMap<NodeId, NodeIndex> {
     (nodes.iter().enumerate()).map(|(idx, node)| (node.id.clone(), idx)).collect()
 }
 
-fn make_elookup(edges: &[Edge]) -> BiMap<(String, String), EdgeIndex> {
+fn make_elookup(edges: &[Edge]) -> BiMap<EdgeId, EdgeIndex> {
     (edges.iter().enumerate())
         .map(|(idx, edge)| ((edge.from.clone(), edge.to.clone()), idx))
         .collect()
 }
 
-fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<String, NodeIndex>) -> (EdgeMap, EdgeMap) {
+fn make_edge_maps(edges: &[Edge], nlookup: &BiMap<NodeId, NodeIndex>) -> (EdgeMap, EdgeMap) {
     let mut fwdmap = EdgeMap::new();
     let mut bwdmap = EdgeMap::new();
 
@@ -464,42 +464,42 @@ fn make_subtree(subgraphs: &[SubGraph]) -> SubTree {
 
     for subgraph in subgraphs {
         let children: HashSet<String> =
-            subgraph.subgraph_idxs.par_iter().map(|&idx| subgraphs[idx].id.clone()).collect();
+            subgraph.subgraph_ids.par_iter().map(|&idx| subgraphs[idx].id.clone()).collect();
         subtree.insert(subgraph.id.clone(), children);
     }
 
     subtree
 }
 
-fn empty_subgraph_idxs(subgraphs: &[SubGraph]) -> HashSet<SubGraphIndex> {
-    let mut empty_subgraph_idxs: HashSet<usize> = HashSet::new();
+fn empty_subgraph_ids(subgraphs: &[SubGraph]) -> HashSet<SubGraphIndex> {
+    let mut empty_subgraph_ids: HashSet<usize> = HashSet::new();
 
     loop {
-        let updated_empty_subgraph_idxs: HashSet<usize> = subgraphs
+        let updated_empty_subgraph_ids: HashSet<usize> = subgraphs
             .par_iter()
             .enumerate()
             .filter_map(|(idx, subgraph)| {
-                let nonempty_subgraph_idxs: Vec<usize> = subgraph
-                    .subgraph_idxs
+                let nonempty_subgraph_ids: Vec<usize> = subgraph
+                    .subgraph_ids
                     .par_iter()
-                    .filter(|idx| !empty_subgraph_idxs.contains(idx))
+                    .filter(|idx| !empty_subgraph_ids.contains(idx))
                     .cloned()
                     .collect();
 
-                let is_empty = nonempty_subgraph_idxs.is_empty()
-                    && subgraph.node_idxs.is_empty()
-                    && subgraph.edge_idxs.is_empty();
+                let is_empty = nonempty_subgraph_ids.is_empty()
+                    && subgraph.node_ids.is_empty()
+                    && subgraph.edge_ids.is_empty();
 
                 is_empty.then_some(idx)
             })
             .collect();
 
-        if updated_empty_subgraph_idxs.len() == empty_subgraph_idxs.len() {
+        if updated_empty_subgraph_ids.len() == empty_subgraph_ids.len() {
             break;
         }
 
-        empty_subgraph_idxs = updated_empty_subgraph_idxs;
+        empty_subgraph_ids = updated_empty_subgraph_ids;
     }
 
-    empty_subgraph_idxs
+    empty_subgraph_ids
 }

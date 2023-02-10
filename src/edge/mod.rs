@@ -1,14 +1,17 @@
 use crate::graphs::graph::NodeIndex;
+use crate::node::NodeId;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{Result, Write};
+
+pub type EdgeId = (NodeId, NodeId);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// An (directed) `Edge` of a graph.
 pub struct Edge {
     /// Id of the start point node
-    pub from: String,
+    pub from: NodeId,
     /// Id of the end point node
-    pub to: String,
+    pub to: NodeId,
     /// Attributes of the edge in key, value mappings
     pub attrs: BTreeMap<String, String>,
 }

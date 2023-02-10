@@ -39,17 +39,17 @@ impl IGraph {
     ) -> SubGraph {
         let id = self.id.clone();
 
-        let subgraph_idxs: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
+        let subgraph_ids: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
             .map(|subgraph| slookup.get_by_left(subgraph).unwrap())
             .cloned()
             .collect();
 
-        let node_idxs: Vec<NodeIndex> = (self.nodes.par_iter())
+        let node_ids: Vec<NodeIndex> = (self.nodes.par_iter())
             .map(|node| nlookup.get_by_left(&node.id).unwrap())
             .cloned()
             .collect();
 
-        let edge_idxs: Vec<EdgeIndex> = (self.edges.par_iter())
+        let edge_ids: Vec<EdgeIndex> = (self.edges.par_iter())
             // https://users.rust-lang.org/t/hashmap-with-tuple-keys/12711/9
             // workaround to get &(String, String) from (&String, &String) without cloning
             .map(|edge| unsafe {
@@ -61,6 +61,6 @@ impl IGraph {
             .cloned()
             .collect();
 
-        SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
+        SubGraph { id, subgraph_ids, node_ids, edge_ids }
     }
 }
