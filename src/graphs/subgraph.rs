@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 /// A `SubGraph` holds indices of its own nodes and edges,
 /// and its children subgraphs.
 ///
@@ -31,6 +31,12 @@ pub struct SubGraph {
     pub node_ids: HashSet<NodeId>,
     /// Ids of its own edges, referenced in `Graph`
     pub edge_ids: HashSet<EdgeId>,
+}
+
+impl PartialEq for SubGraph {
+    fn eq(&self, other: &SubGraph) -> bool {
+        self.id == other.id
+    }
 }
 
 impl Hash for SubGraph {
