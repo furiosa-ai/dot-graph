@@ -1,13 +1,15 @@
 use crate::{
-    edge::Edge,
-    graphs::graph::{EdgeIndex, NodeIndex, SubGraphIndex},
-    node::Node,
+    edge::EdgeId,
+    graphs::graph::{Graph, GraphId},
+    node::NodeId,
 };
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::borrow::Borrow;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::io::Write;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// A `SubGraph` holds indices of its own nodes and edges,
 /// and its children subgraphs.
 ///
@@ -21,77 +23,67 @@ use std::io::Write;
 /// In such a case, `subgraph B` holds `node C`, not `subgraph A`.
 pub struct SubGraph {
     /// Name of the subgraph
-    pub id: String,
+    pub id: GraphId,
 
-    /// Indices of its children subgraphs, referenced in `Graph`
-    pub subgraph_idxs: Vec<SubGraphIndex>,
-    /// Indices of its own nodes, referened in `Graph`
-    pub node_idxs: Vec<NodeIndex>,
-    /// Indices of its own edges, referenced in `Graph`
-    pub edge_idxs: Vec<EdgeIndex>,
+    /// Ids of its children subgraphs, referenced in `Graph`
+    pub subgraph_ids: HashSet<GraphId>,
+    /// Ids of its own nodes, referened in `Graph`
+    pub node_ids: HashSet<NodeId>,
+    /// Ids of its own edges, referenced in `Graph`
+    pub edge_ids: HashSet<EdgeId>,
+}
+
+impl Hash for SubGraph {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Borrow<GraphId> for SubGraph {
+    fn borrow(&self) -> &GraphId {
+        &self.id
+    }
 }
 
 impl SubGraph {
-    /// Collect all nodes contained in this and all its descendant subgraphs
-    pub fn collect_nodes(&self, subgraphs: &[SubGraph]) -> HashSet<NodeIndex> {
-        let node_idxs = self
-            .subgraph_idxs
-            .iter()
-            .map(|&idx| {
-                let subgraph = &subgraphs[idx];
-                subgraph.collect_nodes(subgraphs)
-            })
-            .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
-
-        let node_idxs =
-            node_idxs.union(&HashSet::from_iter(self.node_idxs.clone())).cloned().collect();
-
-        node_idxs
-    }
-
-    pub fn replace_node_and_edge(
+    pub fn extract_nodes_and_edges(
         &self,
-        nreplace: &HashMap<NodeIndex, NodeIndex>,
-        ereplace: &HashMap<EdgeIndex, EdgeIndex>,
+        node_ids: &HashSet<&NodeId>,
+        edge_ids: &HashSet<&EdgeId>,
     ) -> SubGraph {
         let id = self.id.clone();
 
-        let subgraph_idxs = self.subgraph_idxs.clone();
+        let subgraph_ids = self.subgraph_ids.clone();
 
-        let node_idxs: Vec<NodeIndex> =
-            self.node_idxs.par_iter().filter_map(|idx| nreplace.get(idx).cloned()).collect();
+        let node_ids: HashSet<NodeId> =
+            self.node_ids.par_iter().filter(|id| node_ids.contains(id)).cloned().collect();
 
-        let edge_idxs: Vec<EdgeIndex> =
-            self.edge_idxs.par_iter().filter_map(|idx| ereplace.get(idx).cloned()).collect();
+        let edge_ids: HashSet<EdgeId> =
+            self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
 
-        SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
+        SubGraph { id, subgraph_ids, node_ids, edge_ids }
     }
 
-    pub fn replace_subgraph(
-        &self,
-        sreplace: &HashMap<SubGraphIndex, SubGraphIndex>,
-    ) -> Option<SubGraph> {
-        let subgraph_idxs: Vec<SubGraphIndex> =
-            self.subgraph_idxs.par_iter().filter_map(|idx| sreplace.get(idx).cloned()).collect();
+    pub fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
+        let subgraph_ids: HashSet<GraphId> =
+            self.subgraph_ids.par_iter().filter(|id| subgraph_ids.contains(id)).cloned().collect();
 
-        if subgraph_idxs.is_empty() && self.node_idxs.is_empty() && self.edge_idxs.is_empty() {
+        if subgraph_ids.is_empty() && self.node_ids.is_empty() && self.edge_ids.is_empty() {
             None
         } else {
             let id = self.id.clone();
-            let node_idxs = self.node_idxs.clone();
-            let edge_idxs = self.edge_idxs.clone();
+            let node_ids = self.node_ids.clone();
+            let edge_ids = self.edge_ids.clone();
 
-            Some(SubGraph { id, subgraph_idxs, node_idxs, edge_idxs })
+            Some(SubGraph { id, subgraph_ids, node_ids, edge_ids })
         }
     }
 
     /// Write the graph to dot format.
     pub fn to_dot<W: ?Sized>(
         &self,
+        graph: &Graph,
         indent: usize,
-        subgraphs: &[SubGraph],
-        nodes: &[Node],
-        edges: &[Edge],
         writer: &mut W,
     ) -> std::io::Result<()>
     where
@@ -105,19 +97,19 @@ impl SubGraph {
             writeln!(writer, "{}subgraph {} {{", tabs, self.id)?;
         }
 
-        for &idx in &self.subgraph_idxs {
-            let subgraph = &subgraphs[idx];
-            subgraph.to_dot(indent + 1, subgraphs, nodes, edges, writer)?;
+        for id in &self.subgraph_ids {
+            let subgraph = graph.search_subgraph(id).unwrap();
+            subgraph.to_dot(graph, indent + 1, writer)?;
         }
 
-        for &idx in &self.node_idxs {
-            let node = &nodes[idx];
+        for id in &self.node_ids {
+            let node = graph.search_node(id).unwrap();
             writeln!(writer, "{}", tabs)?;
             node.to_dot(indent + 1, writer)?;
         }
 
-        for &idx in &self.edge_idxs {
-            let edge = &edges[idx];
+        for id in &self.edge_ids {
+            let edge = graph.search_edge(id).unwrap();
             writeln!(writer, "{}", tabs)?;
             edge.to_dot(indent + 1, writer)?;
         }

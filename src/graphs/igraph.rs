@@ -1,17 +1,14 @@
 use crate::{
-    edge::Edge,
-    graphs::{
-        graph::{EdgeIndex, NodeIndex, SubGraphIndex},
-        subgraph::SubGraph,
-    },
-    node::Node,
+    edge::{Edge, EdgeId},
+    graphs::{graph::GraphId, subgraph::SubGraph},
+    node::{Node, NodeId},
 };
-use bimap::BiMap;
 use rayon::prelude::*;
-use std::mem::ManuallyDrop;
-use std::ptr;
+use std::borrow::Borrow;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
 /// It holds ids of its children subgraphs, nodes, and edges.
 ///
@@ -19,48 +16,52 @@ use std::ptr;
 /// children subgraphs, nodes, and edges to be referenced in `Graph`.
 pub struct IGraph {
     /// Name of the igraph
-    pub id: String,
+    pub id: GraphId,
 
-    /// Ids of its children subgraphs
-    pub subgraphs: Vec<String>,
+    /// Its children subgraphs
+    pub igraphs: HashSet<IGraph>,
     /// Its own nodes
-    pub nodes: Vec<Node>,
+    pub nodes: HashSet<Node>,
     /// Its own edges
-    pub edges: Vec<Edge>,
+    pub edges: HashSet<Edge>,
+}
+
+impl Hash for IGraph {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Borrow<GraphId> for IGraph {
+    fn borrow(&self) -> &GraphId {
+        &self.id
+    }
 }
 
 impl IGraph {
-    /// Convert `IGraph` to `SubGraph`
-    pub fn encode(
-        &self,
-        slookup: &BiMap<String, SubGraphIndex>,
-        nlookup: &BiMap<String, NodeIndex>,
-        elookup: &BiMap<(String, String), EdgeIndex>,
-    ) -> SubGraph {
+    /// Convert `IGraph` to a set of `SubGraph`s, an unfolded subgraph tree
+    pub fn encode(&self) -> HashSet<SubGraph> {
+        let mut subgraphs = self
+            .igraphs
+            .iter()
+            .map(|igraph| igraph.encode())
+            .fold(HashSet::new(), |acc, subgraphs| acc.union(&subgraphs).cloned().collect());
+
         let id = self.id.clone();
 
-        let subgraph_idxs: Vec<SubGraphIndex> = (self.subgraphs.par_iter())
-            .map(|subgraph| slookup.get_by_left(subgraph).unwrap())
-            .cloned()
-            .collect();
+        let subgraph_ids: HashSet<GraphId> =
+            (self.igraphs.par_iter()).map(|igraph| igraph.id.clone()).collect();
 
-        let node_idxs: Vec<NodeIndex> = (self.nodes.par_iter())
-            .map(|node| nlookup.get_by_left(&node.id).unwrap())
-            .cloned()
-            .collect();
+        let node_ids: HashSet<NodeId> =
+            (self.nodes.par_iter()).map(|node| node.id.clone()).collect();
 
-        let edge_idxs: Vec<EdgeIndex> = (self.edges.par_iter())
-            // https://users.rust-lang.org/t/hashmap-with-tuple-keys/12711/9
-            // workaround to get &(String, String) from (&String, &String) without cloning
-            .map(|edge| unsafe {
-                let key = (ptr::read(&edge.from), ptr::read(&edge.to));
-                let key = ManuallyDrop::new(key);
+        let edge_ids: HashSet<EdgeId> =
+            (self.edges.par_iter()).map(|edge| edge.id.clone()).collect();
 
-                elookup.get_by_left(&key).unwrap()
-            })
-            .cloned()
-            .collect();
+        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids };
 
-        SubGraph { id, subgraph_idxs, node_idxs, edge_idxs }
+        subgraphs.insert(subgraph);
+
+        subgraphs
     }
 }
