@@ -30,6 +30,16 @@ impl Borrow<EdgeId> for Edge {
 }
 
 impl Edge {
+    /// Start point's node id
+    pub fn from(&self) -> NodeId {
+        self.id.0.clone()
+    }
+
+    /// End point's node id
+    pub fn to(&self) -> NodeId {
+        self.id.1.clone()
+    }
+
     /// Write the edge to dot format
     pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
     where
