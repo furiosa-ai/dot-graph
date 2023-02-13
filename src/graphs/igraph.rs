@@ -14,16 +14,16 @@ use std::hash::{Hash, Hasher};
 ///
 /// `SubGraph` is a more compact form of an `IGraph`, in the sense that it holds indices of
 /// children subgraphs, nodes, and edges to be referenced in `Graph`.
-pub struct IGraph {
+pub(crate) struct IGraph {
     /// Name of the igraph
-    pub id: GraphId,
+    pub(crate) id: GraphId,
 
     /// Its children subgraphs
-    pub igraphs: HashSet<IGraph>,
+    pub(crate) igraphs: HashSet<IGraph>,
     /// Its own nodes
-    pub nodes: HashSet<Node>,
+    pub(crate) nodes: HashSet<Node>,
     /// Its own edges
-    pub edges: HashSet<Edge>,
+    pub(crate) edges: HashSet<Edge>,
 }
 
 impl PartialEq for IGraph {
@@ -46,7 +46,7 @@ impl Borrow<GraphId> for IGraph {
 
 impl IGraph {
     /// Convert `IGraph` to a set of `SubGraph`s, an unfolded subgraph tree
-    pub fn encode(&self) -> HashSet<SubGraph> {
+    pub(crate) fn encode(&self) -> HashSet<SubGraph> {
         let mut subgraphs = self
             .igraphs
             .iter()

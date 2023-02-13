@@ -12,6 +12,7 @@ impl bindgen::callbacks::ParseCallbacks for IgnoreMacros {
         }
     }
 }
+
 // https://fitzgeraldnick.com/2016/12/14/using-libbindgen-in-build-rs.html
 fn main() {
     println!("cargo:rustc-link-lib=gvc");

@@ -9,9 +9,9 @@ pub type NodeId = String;
 /// A `Node` of a graph.
 pub struct Node {
     /// Name of the node
-    pub id: NodeId,
+    pub(crate) id: NodeId,
     /// Attributes of the node in key, value mappings
-    pub attrs: HashMap<String, String>,
+    pub(crate) attrs: HashMap<String, String>,
 }
 
 impl PartialEq for Node {
@@ -33,25 +33,35 @@ impl Borrow<NodeId> for Node {
 }
 
 impl Node {
+    pub fn id(&self) -> &NodeId {
+        &self.id
+    }
+
+    pub fn attrs(&self) -> &HashMap<String, String> {
+        &self.attrs
+    }
+
     /// Write the node to dot format
     pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
     where
         W: Write,
     {
-        let tabs = "\t".repeat(indent);
-
-        writeln!(writer, "{}{}[", tabs, self.id)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+        writeln!(writer, "{}[", self.id)?;
 
         for (key, value) in &self.attrs {
+            (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                writeln!(writer, "{}{}=<{}>", tabs, key, value)?;
+                writeln!(writer, "{}=<{}>", key, value)?;
             } else {
-                writeln!(writer, "{}{}=\"{}\"", tabs, key, value)?;
+                writeln!(writer, "{}=\"{}\"", key, value)?;
             }
         }
 
-        write!(writer, "{}];", tabs)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+        write!(writer, "];")?;
 
         Ok(())
     }

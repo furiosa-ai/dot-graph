@@ -12,9 +12,9 @@ pub type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
 /// An (directed) `Edge` of a graph.
 pub struct Edge {
     /// A tuple of start and end points
-    pub id: EdgeId,
+    pub(crate) id: EdgeId,
     /// Attributes of the edge in key, value mappings
-    pub attrs: HashMap<String, String>,
+    pub(crate) attrs: HashMap<String, String>,
 }
 
 impl PartialEq for Edge {
@@ -36,14 +36,22 @@ impl Borrow<EdgeId> for Edge {
 }
 
 impl Edge {
+    pub fn id(&self) -> &EdgeId {
+        &self.id
+    }
+
+    pub fn attrs(&self) -> &HashMap<String, String> {
+        &self.attrs
+    }
+
     /// Start point's node id
-    pub fn from(&self) -> NodeId {
-        self.id.0.clone()
+    pub fn from(&self) -> &NodeId {
+        &self.id.0
     }
 
     /// End point's node id
-    pub fn to(&self) -> NodeId {
-        self.id.1.clone()
+    pub fn to(&self) -> &NodeId {
+        &self.id.1
     }
 
     /// Write the edge to dot format
@@ -51,10 +59,11 @@ impl Edge {
     where
         W: Write,
     {
-        let tabs = "\t".repeat(indent);
         let mut ports = Vec::with_capacity(2);
 
-        write!(writer, "{}{}", tabs, self.id.0)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
+        write!(writer, "{}", self.id.0)?;
 
         let tailport = self.attrs.get("tailport");
         if let Some(tailport) = tailport {
