@@ -8,7 +8,7 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 /// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
 /// It holds ids of its children subgraphs, nodes, and edges.
 ///
@@ -24,6 +24,12 @@ pub struct IGraph {
     pub nodes: HashSet<Node>,
     /// Its own edges
     pub edges: HashSet<Edge>,
+}
+
+impl PartialEq for IGraph {
+    fn eq(&self, other: &IGraph) -> bool {
+        self.id == other.id
+    }
 }
 
 impl Hash for IGraph {
