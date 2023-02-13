@@ -66,7 +66,7 @@ impl Graph {
     }
 
     /// Topologically sort nodes in this `Graph`.
-    pub fn topsort(&self) -> Vec<NodeId> {
+    pub fn topsort(&self) -> Vec<&NodeId> {
         let mut indegrees: HashMap<&NodeId, usize> = HashMap::new();
         for (to, froms) in &self.bwdmap {
             indegrees.insert(to, froms.len());
@@ -82,7 +82,7 @@ impl Graph {
 
         let mut sorted = Vec::new();
         while let Some(id) = queue.pop_front() {
-            sorted.push(id.clone());
+            sorted.push(id);
             if let Some(tos) = self.fwdmap.get(id) {
                 for to in tos {
                     let indegree = indegrees.get_mut(to).unwrap();
@@ -167,11 +167,7 @@ impl Graph {
     pub fn subgraph(&self, root: &GraphId) -> Result<Option<Graph>, DotGraphError> {
         self.collect_nodes(root).map_or(
             Err(DotGraphError::NoSuchSubGraph(root.to_string(), self.id.clone())),
-            |nodes| {
-                let node_ids = nodes.par_iter().map(|node| &node.id).collect();
-
-                Ok(self.extract(&node_ids))
-            },
+            |node_ids| Ok(self.extract(&node_ids)),
         )
     }
 
@@ -246,12 +242,12 @@ impl Graph {
     ///
     /// `Err` if there is no subgraph with `id`,
     /// `Ok` with collected subgraphs.
-    pub fn collect_subgraphs(&self, id: &GraphId) -> Result<HashSet<&SubGraph>, DotGraphError> {
+    pub fn collect_subgraphs(&self, id: &GraphId) -> Result<HashSet<&GraphId>, DotGraphError> {
         self.subtree.get(id).map_or(
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
-                let children: HashSet<&SubGraph> =
-                    children.par_iter().map(|id| self.search_subgraph(id).unwrap()).collect();
+                let children: HashSet<&GraphId> =
+                    children.par_iter().map(|id| &self.search_subgraph(id).unwrap().id).collect();
                 Ok(children)
             },
         )
@@ -263,7 +259,7 @@ impl Graph {
     ///
     /// `Err` if there is no subgraph with `id`,
     /// `Ok` with collected nodes.
-    pub fn collect_nodes(&self, id: &GraphId) -> Result<HashSet<&Node>, DotGraphError> {
+    pub fn collect_nodes(&self, id: &GraphId) -> Result<HashSet<&NodeId>, DotGraphError> {
         self.subtree.get(id).map_or(
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
@@ -273,8 +269,8 @@ impl Graph {
                     .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_nodes: HashSet<&Node> =
-                    subgraph.node_ids.par_iter().map(|id| self.search_node(id).unwrap()).collect();
+                let subgraph_nodes: HashSet<&NodeId> =
+                    subgraph.node_ids.par_iter().map(|id| &self.search_node(id).unwrap().id).collect();
 
                 let nodes = subgraph_nodes.union(&children_nodes).cloned().collect();
 
@@ -289,7 +285,7 @@ impl Graph {
     ///
     /// `Err` if there is no subgraph with `id`,
     /// `Ok` with collected edges.
-    pub fn collect_edges(&self, id: &GraphId) -> Result<HashSet<&Edge>, DotGraphError> {
+    pub fn collect_edges(&self, id: &GraphId) -> Result<HashSet<&EdgeId>, DotGraphError> {
         self.subtree.get(id).map_or(
             Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
             |children| {
@@ -299,8 +295,8 @@ impl Graph {
                     .fold(HashSet::new(), |acc, edges| acc.union(&edges).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_edges: HashSet<&Edge> =
-                    subgraph.edge_ids.par_iter().map(|id| self.search_edge(id).unwrap()).collect();
+                let subgraph_edges: HashSet<&EdgeId> =
+                    subgraph.edge_ids.par_iter().map(|id| &self.search_edge(id).unwrap().id).collect();
 
                 let edges = subgraph_edges.union(&children_edges).cloned().collect();
 
@@ -315,11 +311,12 @@ impl Graph {
     ///
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of predecessor nodes.
-    pub fn froms(&self, id: &NodeId) -> Result<HashSet<NodeId>, DotGraphError> {
+    pub fn froms(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
         self.bwdmap
             .get(id)
             .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |froms| {
-                Ok(froms.clone())
+                let froms = froms.par_iter().map(|from| from).collect();
+                Ok(froms)
             })
     }
 
@@ -329,11 +326,12 @@ impl Graph {
     ///
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of successor nodes.
-    pub fn tos(&self, id: &NodeId) -> Result<HashSet<NodeId>, DotGraphError> {
+    pub fn tos(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
         self.fwdmap
             .get(id)
             .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |tos| {
-                Ok(tos.clone())
+                let tos = tos.par_iter().map(|to| to).collect();
+                Ok(tos)
             })
     }
 
