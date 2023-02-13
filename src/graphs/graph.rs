@@ -45,7 +45,7 @@ pub struct Graph {
 
 impl Graph {
     /// Constructs a new `graph`
-    pub fn new(
+    pub(crate) fn new(
         id: GraphId,
         root: &IGraph,
         nodes: &[Node],

@@ -23,14 +23,14 @@ use std::io::Write;
 /// In such a case, `subgraph B` holds `node C`, not `subgraph A`.
 pub struct SubGraph {
     /// Name of the subgraph
-    pub id: GraphId,
+    pub(crate) id: GraphId,
 
     /// Ids of its children subgraphs, referenced in `Graph`
-    pub subgraph_ids: HashSet<GraphId>,
+    pub(crate) subgraph_ids: HashSet<GraphId>,
     /// Ids of its own nodes, referened in `Graph`
-    pub node_ids: HashSet<NodeId>,
+    pub(crate) node_ids: HashSet<NodeId>,
     /// Ids of its own edges, referenced in `Graph`
-    pub edge_ids: HashSet<EdgeId>,
+    pub(crate) edge_ids: HashSet<EdgeId>,
 }
 
 impl PartialEq for SubGraph {
@@ -52,7 +52,19 @@ impl Borrow<GraphId> for SubGraph {
 }
 
 impl SubGraph {
-    pub fn extract_nodes_and_edges(
+    pub fn subgraphs(&self) -> HashSet<&GraphId> {
+        self.subgraph_ids.par_iter().map(|id| id).collect()
+    }
+
+    pub fn nodes(&self) -> HashSet<&NodeId> {
+        self.node_ids.par_iter().map(|id| id).collect()
+    }
+
+    pub fn edges(&self) -> HashSet<&EdgeId> {
+        self.edge_ids.par_iter().map(|id| id).collect()
+    }
+
+    pub(super) fn extract_nodes_and_edges(
         &self,
         node_ids: &HashSet<&NodeId>,
         edge_ids: &HashSet<&EdgeId>,
@@ -70,7 +82,7 @@ impl SubGraph {
         SubGraph { id, subgraph_ids, node_ids, edge_ids }
     }
 
-    pub fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
+    pub(super) fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
         let subgraph_ids: HashSet<GraphId> =
             self.subgraph_ids.par_iter().filter(|id| subgraph_ids.contains(id)).cloned().collect();
 
@@ -86,7 +98,7 @@ impl SubGraph {
     }
 
     /// Write the graph to dot format.
-    pub fn to_dot<W: ?Sized>(
+    pub(super) fn to_dot<W: ?Sized>(
         &self,
         graph: &Graph,
         indent: usize,
