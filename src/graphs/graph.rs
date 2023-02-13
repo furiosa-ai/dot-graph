@@ -1,5 +1,5 @@
 use crate::{
-    edge::{Edge, EdgeId, EdgeMap},
+    edge::{Edge, EdgeId},
     graphs::{igraph::IGraph, subgraph::SubGraph},
     node::{Node, NodeId},
     DotGraphError,
@@ -11,7 +11,8 @@ use std::io::Write;
 
 pub type GraphId = String;
 
-pub type SubTree = HashMap<GraphId, HashSet<GraphId>>;
+type SubTree = HashMap<GraphId, HashSet<GraphId>>;
+type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
 
 #[derive(Debug, Clone)]
 /// A `Graph` serves as a database of the entire dot graph.

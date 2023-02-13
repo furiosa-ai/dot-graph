@@ -1,12 +1,10 @@
 use crate::node::NodeId;
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::{Result, Write};
 
 pub type EdgeId = (NodeId, NodeId);
-
-pub type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
 
 #[derive(Debug, Clone, Eq)]
 /// An (directed) `Edge` of a graph.
