@@ -38,20 +38,22 @@ impl Node {
     where
         W: Write,
     {
-        let tabs = "\t".repeat(indent);
-
-        writeln!(writer, "{}{}[", tabs, self.id)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+        writeln!(writer, "{}[", self.id)?;
 
         for (key, value) in &self.attrs {
+            (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                writeln!(writer, "{}{}=<{}>", tabs, key, value)?;
+                writeln!(writer, "{}=<{}>", key, value)?;
             } else {
-                writeln!(writer, "{}{}=\"{}\"", tabs, key, value)?;
+                writeln!(writer, "{}=\"{}\"", key, value)?;
             }
         }
 
-        write!(writer, "{}];", tabs)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+        write!(writer, "];")?;
 
         Ok(())
     }

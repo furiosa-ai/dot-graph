@@ -95,12 +95,12 @@ impl SubGraph {
     where
         W: Write,
     {
-        let tabs = "\t".repeat(indent);
-
         if indent == 0 {
             writeln!(writer, "digraph {} {{", self.id)?;
         } else {
-            writeln!(writer, "{}subgraph {} {{", tabs, self.id)?;
+            (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
+            writeln!(writer, "subgraph {} {{", self.id)?;
         }
 
         for id in &self.subgraph_ids {
@@ -110,17 +110,17 @@ impl SubGraph {
 
         for id in &self.node_ids {
             let node = graph.search_node(id).unwrap();
-            writeln!(writer, "{}", tabs)?;
             node.to_dot(indent + 1, writer)?;
         }
 
         for id in &self.edge_ids {
             let edge = graph.search_edge(id).unwrap();
-            writeln!(writer, "{}", tabs)?;
             edge.to_dot(indent + 1, writer)?;
         }
 
-        writeln!(writer, "{} }}", tabs)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
+        writeln!(writer, "}}")?;
 
         Ok(())
     }

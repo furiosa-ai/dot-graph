@@ -51,10 +51,11 @@ impl Edge {
     where
         W: Write,
     {
-        let tabs = "\t".repeat(indent);
         let mut ports = Vec::with_capacity(2);
 
-        write!(writer, "{}{}", tabs, self.id.0)?;
+        (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+
+        write!(writer, "{}", self.id.0)?;
 
         let tailport = self.attrs.get("tailport");
         if let Some(tailport) = tailport {
