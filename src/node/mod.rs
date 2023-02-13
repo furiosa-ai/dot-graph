@@ -9,9 +9,9 @@ pub type NodeId = String;
 /// A `Node` of a graph.
 pub struct Node {
     /// Name of the node
-    pub id: NodeId,
+    pub(crate) id: NodeId,
     /// Attributes of the node in key, value mappings
-    pub attrs: HashMap<String, String>,
+    pub(crate) attrs: HashMap<String, String>,
 }
 
 impl PartialEq for Node {
@@ -33,6 +33,14 @@ impl Borrow<NodeId> for Node {
 }
 
 impl Node {
+    pub fn id(&self) -> &NodeId {
+        &self.id
+    }
+
+    pub fn attrs(&self) -> &HashMap<String, String> {
+        &self.attrs
+    }
+
     /// Write the node to dot format
     pub fn to_dot<W: ?Sized>(&self, indent: usize, writer: &mut W) -> Result<()>
     where

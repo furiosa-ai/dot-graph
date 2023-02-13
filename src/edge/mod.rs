@@ -12,9 +12,9 @@ pub type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
 /// An (directed) `Edge` of a graph.
 pub struct Edge {
     /// A tuple of start and end points
-    pub id: EdgeId,
+    pub(crate) id: EdgeId,
     /// Attributes of the edge in key, value mappings
-    pub attrs: HashMap<String, String>,
+    pub(crate) attrs: HashMap<String, String>,
 }
 
 impl PartialEq for Edge {
@@ -36,6 +36,14 @@ impl Borrow<EdgeId> for Edge {
 }
 
 impl Edge {
+    pub fn id(&self) -> &EdgeId {
+        &self.id
+    }
+
+    pub fn attrs(&self) -> &HashMap<String, String> {
+        &self.attrs
+    }
+
     /// Start point's node id
     pub fn from(&self) -> &NodeId {
         &self.id.0
