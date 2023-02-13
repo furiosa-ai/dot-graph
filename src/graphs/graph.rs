@@ -284,8 +284,11 @@ impl Graph {
                     .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_nodes: HashSet<&NodeId> =
-                    subgraph.node_ids.par_iter().map(|id| &self.search_node(id).unwrap().id).collect();
+                let subgraph_nodes: HashSet<&NodeId> = subgraph
+                    .node_ids
+                    .par_iter()
+                    .map(|id| &self.search_node(id).unwrap().id)
+                    .collect();
 
                 let nodes = subgraph_nodes.union(&children_nodes).cloned().collect();
 
@@ -310,8 +313,11 @@ impl Graph {
                     .fold(HashSet::new(), |acc, edges| acc.union(&edges).cloned().collect());
 
                 let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_edges: HashSet<&EdgeId> =
-                    subgraph.edge_ids.par_iter().map(|id| &self.search_edge(id).unwrap().id).collect();
+                let subgraph_edges: HashSet<&EdgeId> = subgraph
+                    .edge_ids
+                    .par_iter()
+                    .map(|id| &self.search_edge(id).unwrap().id)
+                    .collect();
 
                 let edges = subgraph_edges.union(&children_edges).cloned().collect();
 
@@ -327,12 +333,13 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of predecessor nodes.
     pub fn froms(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
-        self.bwdmap
-            .get(id)
-            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |froms| {
+        self.bwdmap.get(id).map_or(
+            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+            |froms| {
                 let froms = froms.par_iter().map(|from| from).collect();
                 Ok(froms)
-            })
+            },
+        )
     }
 
     /// Retrieve all nodes that are the successors of the node with `id`.
@@ -342,12 +349,13 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of successor nodes.
     pub fn tos(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
-        self.fwdmap
-            .get(id)
-            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |tos| {
+        self.fwdmap.get(id).map_or(
+            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
+            |tos| {
                 let tos = tos.par_iter().map(|to| to).collect();
                 Ok(tos)
-            })
+            },
+        )
     }
 
     /// Write the graph to dot format.
