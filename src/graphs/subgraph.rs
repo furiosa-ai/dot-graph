@@ -52,6 +52,10 @@ impl Borrow<GraphId> for SubGraph {
 }
 
 impl SubGraph {
+    pub fn id(&self) -> &GraphId {
+        &self.id
+    }
+
     pub fn subgraphs(&self) -> HashSet<&GraphId> {
         self.subgraph_ids.par_iter().map(|id| id).collect()
     }
