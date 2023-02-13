@@ -63,7 +63,13 @@ impl Graph {
 
         let subtree = make_subtree(&subgraphs);
 
-        Ok(Graph { id, subgraphs, nodes, edges, subtree, fwdmap, bwdmap })
+        let graph = Graph { id: id.clone(), subgraphs, nodes, edges, subtree, fwdmap, bwdmap };
+
+        if !graph.is_acyclic() {
+            return Err(DotGraphError::Cycle(id));
+        }
+
+        Ok(graph)
     }
 
     pub fn id(&self) -> &GraphId {
@@ -84,6 +90,10 @@ impl Graph {
 
     pub fn is_empty(&self) -> bool {
         self.subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty()
+    }
+
+    fn is_acyclic(&self) -> bool {
+        self.nodes.len() == self.topsort().len()
     }
 
     /// Topologically sort nodes in this `Graph`.
