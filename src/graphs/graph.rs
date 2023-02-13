@@ -23,19 +23,19 @@ pub type SubTree = HashMap<GraphId, HashSet<GraphId>>;
 /// Trying to initialize a `Graph` with duplicate subgraphs, nodes, or edges will panic.
 pub struct Graph {
     /// Name of the entire graph
-    pub id: GraphId,
+    id: GraphId,
 
     /// All subgraphs in the graph (subgraph ids must be unique)
-    pub subgraphs: HashSet<SubGraph>,
+    subgraphs: HashSet<SubGraph>,
 
     /// All nodes in the graph (node ids must be unique)
-    pub nodes: HashSet<Node>,
+    nodes: HashSet<Node>,
 
     /// All edges in the graph (edge ids must be unique)
-    pub edges: HashSet<Edge>,
+    edges: HashSet<Edge>,
 
     /// Parent-children relationships of the subgraphs
-    pub subtree: SubTree,
+    subtree: SubTree,
 
     /// Map constructed from edges, in forward direction
     fwdmap: EdgeMap,
@@ -63,6 +63,22 @@ impl Graph {
         let subtree = make_subtree(&subgraphs);
 
         Ok(Graph { id, subgraphs, nodes, edges, subtree, fwdmap, bwdmap })
+    }
+
+    pub fn id(&self) -> &GraphId {
+        &self.id
+    }
+
+    pub fn subgraphs(&self) -> HashSet<&GraphId> {
+        self.subgraphs.par_iter().map(|subgraph| &subgraph.id).collect()
+    }
+
+    pub fn nodes(&self) -> HashSet<&NodeId> {
+        self.nodes.par_iter().map(|node| &node.id).collect()
+    }
+
+    pub fn edges(&self) -> HashSet<&EdgeId> {
+        self.edges.par_iter().map(|edge| &edge.id).collect()
     }
 
     pub fn is_empty(&self) -> bool {
