@@ -110,7 +110,10 @@ impl Graph {
         let mut visited: HashSet<&NodeId> = HashSet::new();
 
         let mut queue = VecDeque::new();
-        for (&node, _) in indegrees.iter().filter(|&(_, &indegree)| indegree == 0) {
+        let mut zero_indegrees: Vec<&NodeId> = indegrees.iter().filter_map(|(&id, &indegree)| (indegree == 0).then_some(id)).collect();
+        zero_indegrees.sort_by(|a, b| a.cmp(&b));
+
+        for node in zero_indegrees {
             queue.push_back(node);
             visited.insert(node);
         }
@@ -119,6 +122,9 @@ impl Graph {
         while let Some(id) = queue.pop_front() {
             sorted.push(id);
             if let Some(tos) = self.fwdmap.get(id) {
+                let mut tos = Vec::from_iter(tos);
+                tos.sort_by(|a, b| a.cmp(&b));
+
                 for to in tos {
                     let indegree = indegrees.get_mut(to).unwrap();
                     *indegree -= 1;
