@@ -10,6 +10,7 @@ use crate::{
 };
 use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
+use std::path::Path;
 
 unsafe fn c_to_rust_string(ptr: *const i8) -> String {
     String::from_utf8_lossy(CStr::from_ptr(ptr).to_bytes()).to_string()
@@ -26,6 +27,10 @@ unsafe fn c_to_rust_string(ptr: *const i8) -> String {
 /// `Err` if the given file is not a graph or is not a DAG,
 /// otherwise `Ok` with the parsed graph.
 pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
+    if !Path::new(path).exists() {
+        return Err(DotGraphError::InvalidGraph(String::from(path)));
+    }
+
     let cpath = CString::new(path).unwrap();
     let coption = CString::new("r").unwrap();
     unsafe {
