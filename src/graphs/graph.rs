@@ -352,10 +352,7 @@ impl Graph {
     pub fn froms(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
         self.bwdmap.get(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |froms| {
-                let froms = froms.par_iter().map(|from| from).collect();
-                Ok(froms)
-            },
+            |froms| Ok(froms.par_iter().collect())
         )
     }
 
@@ -368,10 +365,7 @@ impl Graph {
     pub fn tos(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
         self.fwdmap.get(id).map_or(
             Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |tos| {
-                let tos = tos.par_iter().map(|to| to).collect();
-                Ok(tos)
-            },
+            |tos| Ok(tos.par_iter().collect())
         )
     }
 
