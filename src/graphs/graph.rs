@@ -110,8 +110,11 @@ impl Graph {
         let mut visited: HashSet<&NodeId> = HashSet::new();
 
         let mut queue = VecDeque::new();
-        let mut zero_indegrees: Vec<&NodeId> = indegrees.iter().filter_map(|(&id, &indegree)| (indegree == 0).then_some(id)).collect();
-        zero_indegrees.sort_by(|a, b| a.cmp(&b));
+        let mut zero_indegrees: Vec<&NodeId> = indegrees
+            .par_iter()
+            .filter_map(|(&id, &indegree)| (indegree == 0).then_some(id))
+            .collect();
+        zero_indegrees.sort();
 
         for node in zero_indegrees {
             queue.push_back(node);
@@ -123,7 +126,7 @@ impl Graph {
             sorted.push(id);
             if let Some(tos) = self.fwdmap.get(id) {
                 let mut tos = Vec::from_iter(tos);
-                tos.sort_by(|a, b| a.cmp(&b));
+                tos.sort();
 
                 for to in tos {
                     let indegree = indegrees.get_mut(to).unwrap();
@@ -342,10 +345,11 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of predecessor nodes.
     pub fn froms(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
-        self.bwdmap.get(id).map_or(
-            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |froms| Ok(froms.par_iter().collect())
-        )
+        self.bwdmap
+            .get(id)
+            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |froms| {
+                Ok(froms.par_iter().collect())
+            })
     }
 
     /// Retrieve all nodes that are the successors of the node with `id`.
@@ -355,10 +359,11 @@ impl Graph {
     /// `Err` if there is no node with `id`,
     /// `Ok` with a set of ids of successor nodes.
     pub fn tos(&self, id: &NodeId) -> Result<HashSet<&NodeId>, DotGraphError> {
-        self.fwdmap.get(id).map_or(
-            Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())),
-            |tos| Ok(tos.par_iter().collect())
-        )
+        self.fwdmap
+            .get(id)
+            .map_or(Err(DotGraphError::NoSuchNode(id.to_string(), self.id.clone())), |tos| {
+                Ok(tos.par_iter().collect())
+            })
     }
 
     /// Write the graph to dot format.
