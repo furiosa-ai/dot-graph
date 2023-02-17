@@ -81,10 +81,10 @@ impl Edge {
             write!(writer, " [ ")?;
             for (key, value) in &self.attrs {
                 if !ports.contains(&&key[..]) {
-                    write!(writer, "{key}={value} ")?;
+                    write!(writer, "{}=\"{}\" ", key, value)?;
                 }
             }
-            write!(writer, "]")?;
+            write!(writer, "]\n")?;
         }
 
         Ok(())

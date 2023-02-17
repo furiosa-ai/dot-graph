@@ -47,10 +47,10 @@ impl Node {
         W: Write,
     {
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-        writeln!(writer, "{}[", self.id)?;
+        writeln!(writer, "{} [", self.id)?;
 
         for (key, value) in &self.attrs {
-            (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
 
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
@@ -61,7 +61,7 @@ impl Node {
         }
 
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-        write!(writer, "];")?;
+        write!(writer, "];\n")?;
 
         Ok(())
     }
