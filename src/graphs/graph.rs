@@ -139,17 +139,9 @@ impl Graph {
         sorted
     }
 
-    /// Constructs a new `Graph`, with nodes starting with the given prefix.
-    ///
-    /// # Arguments
-    ///
-    /// * `prefix` - A prefix of node id
-    pub fn filter(&self, prefix: &str) -> Graph {
-        let node_ids: HashSet<&NodeId> = self
-            .nodes
-            .par_iter()
-            .filter_map(|node| node.id.starts_with(prefix).then_some(&node.id))
-            .collect();
+    /// Constructs a new `Graph`, containing only the given node ids.
+    pub fn filter(&self, node_ids: &[&NodeId]) -> Graph {
+        let node_ids = node_ids.par_iter().cloned().collect();
 
         self.extract(&node_ids)
     }
