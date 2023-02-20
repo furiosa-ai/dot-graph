@@ -55,7 +55,7 @@ fn parse_graph(graph: *mut Agraph_s) -> Result<Graph, DotGraphError> {
     let mut edges = HashSet::new();
     let root = parse_igraph(graph, &mut nodes, &mut edges);
 
-    Graph::new(id, &root, &Vec::from_iter(nodes), &Vec::from_iter(edges))
+    Graph::new(id, root, nodes, edges)
 }
 
 fn parse_igraph(

@@ -6,7 +6,6 @@ use crate::{
 };
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::hash::Hash;
 use std::io::Write;
 
 pub type GraphId = String;
@@ -21,7 +20,6 @@ type EdgeMap = HashMap<NodeId, HashSet<NodeId>>;
 /// such that it can be referenced in `Graph`'s `subgraphs`, `nodes`, and `edges`.
 ///
 /// **All subgraphs, nodes, and edges in the graph MUST HAVE UNIQUE IDS.**
-/// Trying to initialize a `Graph` with duplicate subgraphs, nodes, or edges will panic.
 pub struct Graph {
     /// Name of the entire graph
     id: GraphId,
@@ -48,16 +46,11 @@ impl Graph {
     /// Constructs a new `graph`
     pub(crate) fn new(
         id: GraphId,
-        root: &IGraph,
-        nodes: &[Node],
-        edges: &[Edge],
+        root: IGraph,
+        nodes: HashSet<Node>,
+        edges: HashSet<Edge>,
     ) -> Result<Graph, DotGraphError> {
-        assert!(is_set(nodes));
-        assert!(is_set(edges));
-
         let subgraphs: HashSet<SubGraph> = root.encode();
-        let nodes: HashSet<Node> = nodes.par_iter().cloned().collect();
-        let edges: HashSet<Edge> = edges.par_iter().cloned().collect();
 
         let (fwdmap, bwdmap) = make_edge_maps(&nodes, &edges);
 
@@ -375,15 +368,6 @@ impl Graph {
 
         root.to_dot(self, 0, writer)
     }
-}
-
-fn is_set<T>(iter: T) -> bool
-where
-    T: IntoIterator,
-    T::Item: Eq + Hash,
-{
-    let mut unique = HashSet::new();
-    iter.into_iter().all(move |x| unique.insert(x))
 }
 
 fn make_edge_maps(nodes: &HashSet<Node>, edges: &HashSet<Edge>) -> (EdgeMap, EdgeMap) {
