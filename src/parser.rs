@@ -117,7 +117,7 @@ fn parse_igraph(
         }
     };
 
-    IGraph { id, igraphs, nodes, edges }
+    IGraph::new(id, igraphs, nodes, edges)
 }
 
 fn parse_node(
@@ -150,7 +150,7 @@ fn parse_node(
         }
     };
 
-    let node = Node { id, attrs };
+    let node = Node::new(id, attrs);
 
     (node, edges)
 }
@@ -171,7 +171,7 @@ fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Ed
         }
     }
 
-    Edge { id, attrs }
+    Edge::new(id, attrs)
 }
 
 fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {

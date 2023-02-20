@@ -33,6 +33,10 @@ impl Borrow<NodeId> for Node {
 }
 
 impl Node {
+    pub(crate) fn new(id: NodeId, attrs: HashMap<String, String>) -> Node {
+        Node { id, attrs }
+    }
+
     pub fn id(&self) -> &NodeId {
         &self.id
     }

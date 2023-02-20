@@ -34,6 +34,10 @@ impl Borrow<EdgeId> for Edge {
 }
 
 impl Edge {
+    pub(crate) fn new(id: EdgeId, attrs: HashMap<String, String>) -> Edge {
+        Edge { id, attrs }
+    }
+
     pub fn id(&self) -> &EdgeId {
         &self.id
     }
