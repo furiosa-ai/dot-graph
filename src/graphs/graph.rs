@@ -56,11 +56,7 @@ impl Graph {
 
         let subtree = make_subtree(&subgraphs);
 
-        let graph = Graph { id: id.clone(), subgraphs, nodes, edges, subtree, fwdmap, bwdmap };
-
-        if !graph.is_acyclic() {
-            return Err(DotGraphError::Cycle(id));
-        }
+        let graph = Graph { id, subgraphs, nodes, edges, subtree, fwdmap, bwdmap };
 
         Ok(graph)
     }
@@ -85,16 +81,17 @@ impl Graph {
         self.subgraphs.is_empty() && self.nodes.is_empty() && self.edges.is_empty()
     }
 
-    fn is_acyclic(&self) -> bool {
-        self.nodes.len() == self.topsort().len()
+    pub fn is_acyclic(&self) -> bool {
+        self.topsort().is_ok()
     }
 
     /// Topologically sort nodes in this `Graph`.
     ///
     /// # Returns
     ///
-    /// A vector of topologically sorted node ids.
-    pub fn topsort(&self) -> Vec<&NodeId> {
+    /// `Err` if this graph has a cycle, otherwise
+    /// `Ok` with a vector of topologically sorted node ids.
+    pub fn topsort(&self) -> Result<Vec<&NodeId>, DotGraphError> {
         let mut indegrees: HashMap<&NodeId, usize> = HashMap::new();
         for (to, froms) in &self.bwdmap {
             indegrees.insert(to, froms.len());
@@ -132,7 +129,11 @@ impl Graph {
             }
         }
 
-        sorted
+        if sorted.len() == self.nodes.len() {
+            Ok(sorted)
+        } else {
+            Err(DotGraphError::Cycle(self.id.clone()))
+        }
     }
 
     /// Constructs a new `Graph`, containing only the given node ids.
