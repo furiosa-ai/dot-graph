@@ -114,7 +114,7 @@ impl Graph {
             .par_iter()
             .filter_map(|(&id, &indegree)| (indegree == 0).then_some(id))
             .collect();
-        zero_indegrees.sort();
+        zero_indegrees.sort_unstable();
 
         for node in zero_indegrees {
             queue.push_back(node);
@@ -126,7 +126,7 @@ impl Graph {
             sorted.push(id);
             if let Some(tos) = self.fwdmap.get(id) {
                 let mut tos = Vec::from_iter(tos);
-                tos.sort();
+                tos.sort_unstable();
 
                 for to in tos {
                     let indegree = indegrees.get_mut(to).unwrap();

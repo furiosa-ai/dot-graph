@@ -84,7 +84,7 @@ impl Edge {
                     write!(writer, "{}=\"{}\" ", key, value)?;
                 }
             }
-            write!(writer, "]\n")?;
+            writeln!(writer, "]")?;
         }
 
         Ok(())

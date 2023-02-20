@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 struct IgnoreMacros(HashSet<String>);
+
 impl bindgen::callbacks::ParseCallbacks for IgnoreMacros {
     fn will_parse_macro(&self, name: &str) -> bindgen::callbacks::MacroParsingBehavior {
         if self.0.contains(name) {

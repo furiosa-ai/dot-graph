@@ -61,7 +61,7 @@ impl Node {
         }
 
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-        write!(writer, "];\n")?;
+        writeln!(writer, "];")?;
 
         Ok(())
     }
