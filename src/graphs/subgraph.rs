@@ -87,7 +87,7 @@ impl SubGraph {
 
         let edge_ids: HashSet<EdgeId> =
             self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
-        
+
         let attrs = self.attrs.clone();
 
         SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs }
@@ -119,11 +119,18 @@ impl SubGraph {
     where
         W: Write,
     {
+        let id = &self.id;
         if indent == 0 {
-            writeln!(writer, "digraph {} {{", self.id)?;
+            writeln!(writer, "digraph {id} {{")?;
         } else {
             (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-            writeln!(writer, "subgraph {} {{", self.id)?;
+
+            // anonymous subgraphs are parsed to have ids starting with %
+            if id.starts_with('%') {
+                writeln!(writer, "{{")?;
+            } else {
+                writeln!(writer, "subgraph {id} {{")?;
+            }
         }
 
         if !self.attrs.is_empty() {
