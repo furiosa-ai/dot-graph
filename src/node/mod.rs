@@ -58,9 +58,9 @@ impl Node {
 
             // TODO naive workaround to visualize HTML strings
             if value.contains("TABLE") {
-                writeln!(writer, "{}=<{}>", key, value)?;
+                writeln!(writer, "{key}=<{value}>")?;
             } else {
-                writeln!(writer, "{}=\"{}\"", key, value)?;
+                writeln!(writer, "{key}=\"{value}\"")?;
             }
         }
 

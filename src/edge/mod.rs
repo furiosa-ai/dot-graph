@@ -65,19 +65,21 @@ impl Edge {
 
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
 
-        write!(writer, "{}", self.id.0)?;
+        let from = &self.id.0;
+        write!(writer, "{from}")?;
 
         let tailport = self.attrs.get("tailport");
         if let Some(tailport) = tailport {
-            write!(writer, ":{}", tailport)?;
+            write!(writer, ":{tailport}")?;
             ports.push("tailport");
         }
 
-        write!(writer, " -> {}", self.id.1)?;
+        let to = &self.id.1;
+        write!(writer, " -> {to}")?;
 
         let headport = self.attrs.get("headport");
         if let Some(headport) = headport {
-            write!(writer, ":{}", headport)?;
+            write!(writer, ":{headport}")?;
             ports.push("headport");
         };
 
@@ -85,7 +87,7 @@ impl Edge {
             write!(writer, " [ ")?;
             for (key, value) in &self.attrs {
                 if !ports.contains(&&key[..]) {
-                    write!(writer, "{}=\"{}\" ", key, value)?;
+                    write!(writer, "{key}=\"{value}\" ")?;
                 }
             }
             writeln!(writer, "]")?;
