@@ -20,6 +20,12 @@ Coming from Linux,
 $ sudo apt install graphviz-dev
 ```
 
+And coming from vanilla Ubuntu, you may want to install these too.
+```console
+$ sudo apt install build-essentials cmake
+$ sudo apt install clang
+```
+
 Coming from Mac,
 ```console
 $ brew install graphviz
@@ -32,7 +38,8 @@ export CPATH=/opt/homebrew/include
 
 #### Option 2. Building Graphviz from Source
 
-Or, try building from the source code following the [guide](https://graphviz.org/download/source/).
+Or, try building from the source code yourself following the [guide](https://graphviz.org/download/source/).
+
 
 ## Usage
 
