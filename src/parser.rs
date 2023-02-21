@@ -75,6 +75,16 @@ fn parse_igraph(
         }
     };
 
+    // parse graph attr names
+    let mut gkeys = Vec::new();
+    unsafe {
+        let mut key = agnxtattr(graph, 0, std::ptr::null_mut::<Agsym_s>());
+        while !key.is_null() {
+            gkeys.push((*key).name);
+            key = agnxtattr(graph, 0, key);
+        }
+    };
+
     // parse node attr names
     let mut nkeys = Vec::new();
     unsafe {
@@ -94,6 +104,18 @@ fn parse_igraph(
             key = agnxtattr(graph, 2, key);
         }
     };
+
+    // parse graph attrs
+    let mut attrs = HashMap::new();
+    for key in gkeys {
+        let (key, value) = unsafe {
+            let value = agget(graph as _, key);
+            (c_to_rust_string(key), c_to_rust_string(value))
+        };
+        if !value.is_empty() {
+            attrs.insert(key, value);
+        }
+    }
 
     // parse nodes and edges
     let mut nodes = HashSet::new();
@@ -117,7 +139,7 @@ fn parse_igraph(
         }
     };
 
-    IGraph::new(id, igraphs, nodes, edges)
+    IGraph::new(id, igraphs, nodes, edges, attrs)
 }
 
 fn parse_node(

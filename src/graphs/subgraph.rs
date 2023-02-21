@@ -5,7 +5,7 @@ use crate::{
 };
 use rayon::prelude::*;
 use std::borrow::Borrow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 
@@ -24,13 +24,14 @@ use std::io::Write;
 pub struct SubGraph {
     /// Name of the subgraph
     pub(crate) id: GraphId,
-
     /// Ids of its children subgraphs, referenced in `Graph`
     pub(crate) subgraph_ids: HashSet<GraphId>,
     /// Ids of its own nodes, referened in `Graph`
     pub(crate) node_ids: HashSet<NodeId>,
     /// Ids of its own edges, referenced in `Graph`
     pub(crate) edge_ids: HashSet<EdgeId>,
+    /// Attributes of the graph in key, value mappings
+    pub(crate) attrs: HashMap<String, String>,
 }
 
 impl PartialEq for SubGraph {
@@ -54,6 +55,10 @@ impl Borrow<GraphId> for SubGraph {
 impl SubGraph {
     pub fn id(&self) -> &GraphId {
         &self.id
+    }
+
+    pub fn attrs(&self) -> &HashMap<String, String> {
+        &self.attrs
     }
 
     pub fn subgraphs(&self) -> HashSet<&GraphId> {
@@ -82,8 +87,10 @@ impl SubGraph {
 
         let edge_ids: HashSet<EdgeId> =
             self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
+        
+        let attrs = self.attrs.clone();
 
-        SubGraph { id, subgraph_ids, node_ids, edge_ids }
+        SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs }
     }
 
     pub(super) fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
@@ -96,8 +103,9 @@ impl SubGraph {
             let id = self.id.clone();
             let node_ids = self.node_ids.clone();
             let edge_ids = self.edge_ids.clone();
+            let attrs = self.attrs.clone();
 
-            Some(SubGraph { id, subgraph_ids, node_ids, edge_ids })
+            Some(SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs })
         }
     }
 
@@ -115,8 +123,20 @@ impl SubGraph {
             writeln!(writer, "digraph {} {{", self.id)?;
         } else {
             (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-
             writeln!(writer, "subgraph {} {{", self.id)?;
+        }
+
+        if !self.attrs.is_empty() {
+            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
+            writeln!(writer, "graph [")?;
+
+            for (key, value) in &self.attrs {
+                (0..=indent + 1).try_for_each(|_| write!(writer, "\t"))?;
+                writeln!(writer, "{key} = \"{value}\",")?;
+            }
+
+            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
+            writeln!(writer, "]")?;
         }
 
         for id in &self.subgraph_ids {
