@@ -120,17 +120,17 @@ impl SubGraph {
         W: Write,
     {
         let id = &self.id;
+        let id = if id.chars().all(char::is_alphanumeric) {
+            id.clone() 
+        } else {
+            format!("\"{id}\"")
+        };
+
         if indent == 0 {
             writeln!(writer, "digraph {id} {{")?;
         } else {
             (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-
-            // anonymous subgraphs are parsed to have ids starting with %
-            if id.starts_with('%') {
-                writeln!(writer, "{{")?;
-            } else {
-                writeln!(writer, "subgraph {id} {{")?;
-            }
+            writeln!(writer, "subgraph {id} {{")?;
         }
 
         if !self.attrs.is_empty() {
