@@ -12,4 +12,6 @@ pub enum DotGraphError {
     NoSuchNode(String, String),
     #[error("`{0}` is not a subgraph of graph `{1}`")]
     NoSuchSubGraph(String, String),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
 }
