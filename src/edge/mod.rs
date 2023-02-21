@@ -65,7 +65,7 @@ impl Edge {
 
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
 
-        let from = &self.id.0;
+        let from = crate::pretty_id(&self.id.0);
         write!(writer, "{from}")?;
 
         let tailport = self.attrs.get("tailport");
@@ -74,7 +74,7 @@ impl Edge {
             ports.push("tailport");
         }
 
-        let to = &self.id.1;
+        let to = crate::pretty_id(&self.id.1);
         write!(writer, " -> {to}")?;
 
         let headport = self.attrs.get("headport");

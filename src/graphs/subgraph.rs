@@ -119,13 +119,7 @@ impl SubGraph {
     where
         W: Write,
     {
-        let id = &self.id;
-        let id = if id.chars().all(char::is_alphanumeric) {
-            id.clone() 
-        } else {
-            format!("\"{id}\"")
-        };
-
+        let id = crate::pretty_id(&self.id);
         if indent == 0 {
             writeln!(writer, "digraph {id} {{")?;
         } else {

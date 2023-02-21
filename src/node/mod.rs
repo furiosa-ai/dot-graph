@@ -50,8 +50,9 @@ impl Node {
     where
         W: Write,
     {
+        let id = crate::pretty_id(&self.id);
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
-        writeln!(writer, "{} [", self.id)?;
+        writeln!(writer, "{id} [")?;
 
         for (key, value) in &self.attrs {
             (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
