@@ -138,9 +138,7 @@ impl Graph {
 
     /// Constructs a new `Graph`, containing only the given node ids.
     pub fn filter(&self, node_ids: &[&NodeId]) -> Graph {
-        let node_ids = node_ids.par_iter().cloned().collect();
-
-        self.extract(&node_ids)
+        self.extract(node_ids)
     }
 
     /// Constructs a new `Graph`, given a center node and depth limit.
@@ -155,28 +153,28 @@ impl Graph {
     /// `Err` if there is no node named `center`,
     /// `Ok` with neighbors `Graph` otherwise.
     pub fn neighbors(&self, center: &NodeId, depth: usize) -> Result<Graph, DotGraphError> {
-        self.nodes.get(center).map_or(
-            Err(DotGraphError::NoSuchNode(center.clone(), self.id.clone())),
-            |_| {
-                let mut visited = HashSet::new();
-                let mut frontier: VecDeque<(&NodeId, usize)> = VecDeque::new();
-                frontier.push_back((center, 0));
+        if self.nodes.get(center).is_some() {
+            let mut visited = HashSet::new();
+            let mut frontier: VecDeque<(&NodeId, usize)> = VecDeque::new();
+            frontier.push_back((center, 0));
 
-                while let Some((id, vicinity)) = frontier.pop_front() {
-                    if vicinity > depth || !visited.insert(id) {
-                        continue;
-                    }
-
-                    let tos = self.fwdmap.get(id).unwrap();
-                    let froms = self.bwdmap.get(id).unwrap();
-                    let nexts = tos.union(froms);
-
-                    frontier.extend(nexts.map(|next| (next, vicinity + 1)));
+            while let Some((id, vicinity)) = frontier.pop_front() {
+                if vicinity > depth || !visited.insert(id) {
+                    continue;
                 }
 
-                Ok(self.extract(&visited))
-            },
-        )
+                let tos = self.fwdmap.get(id).unwrap();
+                let froms = self.bwdmap.get(id).unwrap();
+                let nexts = tos.union(froms);
+
+                frontier.extend(nexts.map(|next| (next, vicinity + 1)));
+            }
+
+            let visited: Vec<&NodeId> = visited.into_par_iter().collect();
+            Ok(self.extract(&visited))
+        } else {
+            Err(DotGraphError::NoSuchNode(center.clone(), self.id.clone()))
+        }
     }
 
     /// Constructs a new `Graph`, with a new `root`.
@@ -196,7 +194,7 @@ impl Graph {
         )
     }
 
-    fn extract(&self, node_ids: &HashSet<&NodeId>) -> Graph {
+    fn extract(&self, node_ids: &[&NodeId]) -> Graph {
         let mut nodes = HashSet::new();
         for id in node_ids {
             if let Some(node) = self.search_node(id) {
@@ -262,16 +260,16 @@ impl Graph {
     /// # Returns
     ///
     /// `Err` if there is no subgraph with `id`,
-    /// `Ok` with collected subgraph ids.
-    pub fn collect_subgraphs(&self, id: &GraphId) -> Result<HashSet<&GraphId>, DotGraphError> {
-        self.subtree.get(id).map_or(
-            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
-            |children| {
-                let children: HashSet<&GraphId> =
-                    children.par_iter().map(|id| &self.search_subgraph(id).unwrap().id).collect();
-                Ok(children)
-            },
-        )
+    /// `Ok` with collected subgraph ids, where all ids are unique.
+    /// (conceptually a set)
+    pub fn collect_subgraphs(&self, id: &GraphId) -> Result<Vec<&GraphId>, DotGraphError> {
+        if let Some(children) = self.subtree.get(id) {
+            let subgraphs: Vec<&GraphId> =
+                children.par_iter().map(|id| &self.search_subgraph(id).unwrap().id).collect();
+            Ok(subgraphs)
+        } else {
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone()))
+        }
     }
 
     /// Collect all nodes in a subgraph by `id`
@@ -279,28 +277,24 @@ impl Graph {
     /// # Returns
     ///
     /// `Err` if there is no subgraph with `id`,
-    /// `Ok` with collected node ids.
-    pub fn collect_nodes(&self, id: &GraphId) -> Result<HashSet<&NodeId>, DotGraphError> {
-        self.subtree.get(id).map_or(
-            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
-            |children| {
-                let children_nodes = children
-                    .iter()
-                    .map(|id| self.collect_nodes(id).unwrap())
-                    .fold(HashSet::new(), |acc, nodes| acc.union(&nodes).cloned().collect());
+    /// `Ok` with collected node ids, where all ids are unique.
+    /// (conceptually a set)
+    pub fn collect_nodes(&self, id: &GraphId) -> Result<Vec<&NodeId>, DotGraphError> {
+        if let Some(children) = self.subtree.get(id) {
+            let mut nodes = Vec::new();
 
-                let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_nodes: HashSet<&NodeId> = subgraph
-                    .node_ids
-                    .par_iter()
-                    .map(|id| &self.search_node(id).unwrap().id)
-                    .collect();
+            for id in children {
+                nodes.extend(self.collect_nodes(id).unwrap());
+            }
 
-                let nodes = subgraph_nodes.union(&children_nodes).cloned().collect();
+            for id in &self.search_subgraph(id).unwrap().node_ids {
+                nodes.push(&self.search_node(id).unwrap().id);
+            }
 
-                Ok(nodes)
-            },
-        )
+            Ok(nodes)
+        } else {
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone()))
+        }
     }
 
     /// Collect all edges in a subgraph by `id`
@@ -308,28 +302,24 @@ impl Graph {
     /// # Returns
     ///
     /// `Err` if there is no subgraph with `id`,
-    /// `Ok` with collected edge ids.
-    pub fn collect_edges(&self, id: &GraphId) -> Result<HashSet<&EdgeId>, DotGraphError> {
-        self.subtree.get(id).map_or(
-            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone())),
-            |children| {
-                let children_edges = children
-                    .iter()
-                    .map(|id| self.collect_edges(id).unwrap())
-                    .fold(HashSet::new(), |acc, edges| acc.union(&edges).cloned().collect());
+    /// `Ok` with collected edge ids, where all ids are unique.
+    /// (conceptually a set)
+    pub fn collect_edges(&self, id: &GraphId) -> Result<Vec<&EdgeId>, DotGraphError> {
+        if let Some(children) = self.subtree.get(id) {
+            let mut edges = Vec::new();
 
-                let subgraph = self.search_subgraph(id).unwrap();
-                let subgraph_edges: HashSet<&EdgeId> = subgraph
-                    .edge_ids
-                    .par_iter()
-                    .map(|id| &self.search_edge(id).unwrap().id)
-                    .collect();
+            for id in children {
+                edges.extend(self.collect_edges(id).unwrap());
+            }
 
-                let edges = subgraph_edges.union(&children_edges).cloned().collect();
+            for id in &self.search_subgraph(id).unwrap().edge_ids {
+                edges.push(&self.search_edge(id).unwrap().id);
+            }
 
-                Ok(edges)
-            },
-        )
+            Ok(edges)
+        } else {
+            Err(DotGraphError::NoSuchSubGraph(id.to_string(), self.id.clone()))
+        }
     }
 
     /// Retrieve all nodes that are the predecessors of the node with `id`.
