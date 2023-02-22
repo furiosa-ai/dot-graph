@@ -1,6 +1,6 @@
 use crate::graphviz::{
-    agfstnode, agfstout, agfstsubg, agget, aghtmlstr, agisdirected, agnameof, agnxtattr, agnxtnode, 
-    agnxtout, agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s
+    agfstnode, agfstout, agfstsubg, agget, aghtmlstr, agisdirected, agnameof, agnxtattr, agnxtnode,
+    agnxtout, agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
 use crate::{
     attr::Attr,
