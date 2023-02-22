@@ -1,15 +1,16 @@
 use crate::graphviz::{
-    agfstnode, agfstout, agfstsubg, agget, agisdirected, agnameof, agnxtattr, agnxtnode, agnxtout,
-    agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
+    agfstnode, agfstout, agfstsubg, agget, aghtmlstr, agisdirected, agnameof, agnxtattr, agnxtnode, 
+    agnxtout, agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s
 };
 use crate::{
+    attr::Attr,
     edge::Edge,
     error::DotGraphError,
     graphs::{Graph, IGraph},
     node::Node,
 };
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::ffi::{CStr, CString};
 use std::path::Path;
 
@@ -107,16 +108,7 @@ fn parse_igraph(
     };
 
     // parse graph attrs
-    let mut attrs = HashMap::new();
-    for key in gkeys {
-        let (key, value) = unsafe {
-            let value = agget(graph as _, key);
-            (c_to_rust_string(key), c_to_rust_string(value))
-        };
-        if !value.is_empty() {
-            attrs.insert(key, value);
-        }
-    }
+    let attrs = parse_attrs(graph as _, &gkeys);
 
     // parse nodes and edges
     let mut nodes = HashSet::new();
@@ -151,16 +143,7 @@ fn parse_node(
 ) -> (Node, Vec<Edge>) {
     let id = parse_name(node as _);
 
-    let mut attrs = HashMap::new();
-    for &key in nkeys {
-        let (key, value) = unsafe {
-            let value = agget(node as _, key);
-            (c_to_rust_string(key), c_to_rust_string(value))
-        };
-        if !value.is_empty() {
-            attrs.insert(key, value);
-        }
-    }
+    let attrs = parse_attrs(node as _, nkeys);
 
     let mut edges = Vec::new();
     unsafe {
@@ -183,18 +166,26 @@ fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Ed
     let to = unsafe { parse_name((*edge).node as _) };
     let id = (from, to);
 
-    let mut attrs = HashMap::new();
-    for &key in ekeys {
-        let (key, value) = unsafe {
-            let value = agget(edge as _, key);
-            (c_to_rust_string(key), c_to_rust_string(value))
+    let attrs = parse_attrs(edge as _, ekeys);
+
+    Edge::new(id, attrs)
+}
+
+fn parse_attrs(obj: *mut ::std::os::raw::c_void, keys: &[*mut i8]) -> HashSet<Attr> {
+    let mut attrs = HashSet::new();
+    for &key in keys {
+        let (key, value, is_html) = unsafe {
+            let value = agget(obj, key);
+            let is_html = aghtmlstr(value) != 0;
+            (c_to_rust_string(key), c_to_rust_string(value), is_html)
         };
         if !value.is_empty() {
-            attrs.insert(key, value);
+            let attr = Attr::new(key, value, is_html);
+            attrs.insert(attr);
         }
     }
 
-    Edge::new(id, attrs)
+    attrs
 }
 
 fn parse_name(obj: *mut ::std::os::raw::c_void) -> String {

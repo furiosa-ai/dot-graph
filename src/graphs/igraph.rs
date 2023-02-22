@@ -1,11 +1,12 @@
 use crate::{
+    attr::Attr,
     edge::{Edge, EdgeId},
     graphs::{graph::GraphId, subgraph::SubGraph},
     node::{Node, NodeId},
 };
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 use rayon::prelude::*;
@@ -26,7 +27,7 @@ pub(crate) struct IGraph {
     /// Its own edges
     edges: HashSet<Edge>,
     /// Attributes of the graph in key, value mappings
-    attrs: HashMap<String, String>,
+    attrs: HashSet<Attr>,
 }
 
 impl PartialEq for IGraph {
@@ -53,7 +54,7 @@ impl IGraph {
         igraphs: HashSet<IGraph>,
         nodes: HashSet<Node>,
         edges: HashSet<Edge>,
-        attrs: HashMap<String, String>,
+        attrs: HashSet<Attr>,
     ) -> IGraph {
         IGraph { id, igraphs, nodes, edges, attrs }
     }

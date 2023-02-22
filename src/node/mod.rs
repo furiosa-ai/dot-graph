@@ -1,7 +1,7 @@
-use crate::utils;
+use crate::{attr::Attr, utils};
 
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::io::{Result, Write};
 
@@ -13,7 +13,7 @@ pub struct Node {
     /// Name of the node
     pub(crate) id: NodeId,
     /// Attributes of the node in key, value mappings
-    pub(crate) attrs: HashMap<String, String>,
+    pub(crate) attrs: HashSet<Attr>,
 }
 
 impl PartialEq for Node {
@@ -35,7 +35,7 @@ impl Borrow<NodeId> for Node {
 }
 
 impl Node {
-    pub(crate) fn new(id: NodeId, attrs: HashMap<String, String>) -> Node {
+    pub(crate) fn new(id: NodeId, attrs: HashSet<Attr>) -> Node {
         Node { id, attrs }
     }
 
@@ -43,7 +43,7 @@ impl Node {
         &self.id
     }
 
-    pub fn attrs(&self) -> &HashMap<String, String> {
+    pub fn attrs(&self) -> &HashSet<Attr> {
         &self.attrs
     }
 
@@ -56,15 +56,8 @@ impl Node {
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
         writeln!(writer, "{id} [")?;
 
-        for (key, value) in &self.attrs {
-            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
-
-            // TODO naive workaround to visualize HTML strings
-            if value.contains("TABLE") {
-                writeln!(writer, "{key}=<{value}>")?;
-            } else {
-                writeln!(writer, "{key}=\"{value}\"")?;
-            }
+        for attr in &self.attrs {
+            attr.to_dot(indent + 1, writer)?;
         }
 
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;

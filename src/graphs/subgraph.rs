@@ -1,4 +1,5 @@
 use crate::{
+    attr::Attr,
     edge::EdgeId,
     graphs::graph::{Graph, GraphId},
     node::NodeId,
@@ -6,7 +7,7 @@ use crate::{
 };
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 
@@ -34,7 +35,7 @@ pub struct SubGraph {
     /// Ids of its own edges, referenced in `Graph`
     pub(crate) edge_ids: HashSet<EdgeId>,
     /// Attributes of the graph in key, value mappings
-    pub(crate) attrs: HashMap<String, String>,
+    pub(crate) attrs: HashSet<Attr>,
 }
 
 impl PartialEq for SubGraph {
@@ -60,7 +61,7 @@ impl SubGraph {
         &self.id
     }
 
-    pub fn attrs(&self) -> &HashMap<String, String> {
+    pub fn attrs(&self) -> &HashSet<Attr> {
         &self.attrs
     }
 
@@ -134,9 +135,8 @@ impl SubGraph {
             (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
             writeln!(writer, "graph [")?;
 
-            for (key, value) in &self.attrs {
-                (0..=indent + 1).try_for_each(|_| write!(writer, "\t"))?;
-                writeln!(writer, "{key} = \"{value}\",")?;
+            for attr in &self.attrs {
+                attr.to_dot(indent + 1, writer)?;
             }
 
             (0..=indent).try_for_each(|_| write!(writer, "\t"))?;

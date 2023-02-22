@@ -1,7 +1,7 @@
-use crate::{node::NodeId, utils};
+use crate::{attr::Attr, node::NodeId, utils};
 
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::io::{Result, Write};
 
@@ -13,7 +13,7 @@ pub struct Edge {
     /// A tuple of start and end points
     pub(crate) id: EdgeId,
     /// Attributes of the edge in key, value mappings
-    pub(crate) attrs: HashMap<String, String>,
+    pub(crate) attrs: HashSet<Attr>,
 }
 
 impl PartialEq for Edge {
@@ -35,7 +35,7 @@ impl Borrow<EdgeId> for Edge {
 }
 
 impl Edge {
-    pub(crate) fn new(id: EdgeId, attrs: HashMap<String, String>) -> Edge {
+    pub(crate) fn new(id: EdgeId, attrs: HashSet<Attr>) -> Edge {
         Edge { id, attrs }
     }
 
@@ -43,7 +43,7 @@ impl Edge {
         &self.id
     }
 
-    pub fn attrs(&self) -> &HashMap<String, String> {
+    pub fn attrs(&self) -> &HashSet<Attr> {
         &self.attrs
     }
 
@@ -71,6 +71,7 @@ impl Edge {
 
         let tailport = self.attrs.get("tailport");
         if let Some(tailport) = tailport {
+            let tailport = &tailport.value;
             write!(writer, ":{tailport}")?;
             ports.push("tailport");
         }
@@ -80,15 +81,17 @@ impl Edge {
 
         let headport = self.attrs.get("headport");
         if let Some(headport) = headport {
+            let headport = &headport.value;
             write!(writer, ":{headport}")?;
             ports.push("headport");
         };
 
         if self.attrs.len() > ports.len() {
-            write!(writer, " [ ")?;
-            for (key, value) in &self.attrs {
+            writeln!(writer, " [")?;
+            for attr in &self.attrs {
+                let key = &attr.key;
                 if !ports.contains(&&key[..]) {
-                    write!(writer, "{key}=\"{value}\" ")?;
+                    attr.to_dot(indent + 1, writer)?;
                 }
             }
             writeln!(writer, "]")?;

@@ -1,3 +1,4 @@
+pub mod attr;
 pub mod edge;
 pub mod error;
 pub mod graphs;
@@ -6,6 +7,7 @@ pub mod node;
 pub mod parser;
 mod utils;
 
+pub use attr::Attr;
 pub use edge::Edge;
 pub use error::DotGraphError;
 pub use graphs::{Graph, SubGraph};
