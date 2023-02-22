@@ -1,3 +1,5 @@
+use crate::utils;
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -50,7 +52,7 @@ impl Node {
     where
         W: Write,
     {
-        let id = crate::pretty_id(&self.id);
+        let id = utils::pretty_id(&self.id);
         (0..indent).try_for_each(|_| write!(writer, "\t"))?;
         writeln!(writer, "{id} [")?;
 

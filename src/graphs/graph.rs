@@ -4,9 +4,11 @@ use crate::{
     node::{Node, NodeId},
     DotGraphError,
 };
-use rayon::prelude::*;
+
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Write;
+
+use rayon::prelude::*;
 
 pub type GraphId = String;
 

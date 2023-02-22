@@ -2,12 +2,13 @@ use crate::graphviz::{
     agfstnode, agfstout, agfstsubg, agget, agisdirected, agnameof, agnxtattr, agnxtnode, agnxtout,
     agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
-use crate::DotGraphError;
 use crate::{
     edge::Edge,
+    error::DotGraphError,
     graphs::{Graph, IGraph},
     node::Node,
 };
+
 use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
 use std::path::Path;

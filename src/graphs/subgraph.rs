@@ -2,12 +2,15 @@ use crate::{
     edge::EdgeId,
     graphs::graph::{Graph, GraphId},
     node::NodeId,
+    utils,
 };
-use rayon::prelude::*;
+
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::io::Write;
+
+use rayon::prelude::*;
 
 #[derive(Debug, Clone, Eq)]
 /// A `SubGraph` holds indices of its own nodes and edges,
@@ -119,7 +122,7 @@ impl SubGraph {
     where
         W: Write,
     {
-        let id = crate::pretty_id(&self.id);
+        let id = utils::pretty_id(&self.id);
         if indent == 0 {
             writeln!(writer, "digraph {id} {{")?;
         } else {

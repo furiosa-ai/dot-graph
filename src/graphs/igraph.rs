@@ -3,10 +3,12 @@ use crate::{
     graphs::{graph::GraphId, subgraph::SubGraph},
     node::{Node, NodeId},
 };
-use rayon::prelude::*;
+
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+
+use rayon::prelude::*;
 
 #[derive(Debug, Clone, Eq)]
 /// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
