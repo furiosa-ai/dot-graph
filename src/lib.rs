@@ -9,9 +9,9 @@ mod utils;
 
 pub mod prelude {
     pub use crate::attr::Attr;
-    pub use crate::edge::Edge;
+    pub use crate::edge::{Edge, EdgeId};
     pub use crate::error::DotGraphError;
-    pub use crate::graphs::{Graph, SubGraph};
-    pub use crate::node::Node;
+    pub use crate::graphs::{Graph, GraphId, SubGraph};
+    pub use crate::node::{Node, NodeId};
     pub use crate::parser;
 }

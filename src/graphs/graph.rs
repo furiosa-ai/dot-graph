@@ -207,7 +207,8 @@ impl Graph {
 
         let mut edges = HashSet::new();
         for edge in &self.edges {
-            let (from, to) = &edge.id;
+            let from = &edge.id.from;
+            let to = &edge.id.to;
 
             if node_ids.get(from).is_some() && node_ids.get(to).is_some() {
                 edges.insert(edge.clone());
@@ -368,7 +369,8 @@ fn make_edge_maps(nodes: &HashSet<Node>, edges: &HashSet<Edge>) -> (EdgeMap, Edg
     let mut bwdmap = EdgeMap::new();
 
     for edge in edges {
-        let (from, to) = &edge.id;
+        let from = &edge.id.from;
+        let to = &edge.id.to;
 
         fwdmap.entry(from.clone()).or_default().insert(to.clone());
         bwdmap.entry(to.clone()).or_default().insert(from.clone());

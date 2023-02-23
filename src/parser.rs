@@ -4,7 +4,7 @@ use crate::graphviz::{
 };
 use crate::{
     attr::Attr,
-    edge::Edge,
+    edge::{Edge, EdgeId},
     error::DotGraphError,
     graphs::{Graph, IGraph},
     node::Node,
@@ -164,9 +164,12 @@ fn parse_node(
 fn parse_edge(edge: *mut Agedge_s, node: *mut Agnode_s, ekeys: &[*mut i8]) -> Edge {
     let from = parse_name(node as _);
     let to = unsafe { parse_name((*edge).node as _) };
-    let id = (from, to);
 
-    let attrs = parse_attrs(edge as _, ekeys);
+    let mut attrs = parse_attrs(edge as _, ekeys);
+    let tailport = attrs.take("tailport").map(|attr| attr.value);
+    let headport = attrs.take("headport").map(|attr| attr.value);
+
+    let id = EdgeId::new(from, tailport, to, headport);
 
     Edge::new(id, attrs)
 }
