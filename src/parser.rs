@@ -1,6 +1,6 @@
 use crate::graphviz::{
-    agfstnode, agfstout, agfstsubg, agget, aghtmlstr, agisdirected, agnameof, agnxtattr, agnxtnode,
-    agnxtout, agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
+    agfstnode, agfstout, agfstsubg, agget, aghtmlstr, agisdirected, agmemread, agnameof, agnxtattr,
+    agnxtnode, agnxtout, agnxtsubg, agread, fopen, Agedge_s, Agnode_s, Agraph_s, Agsym_s,
 };
 use crate::{
     attr::Attr,
@@ -28,7 +28,7 @@ unsafe fn c_to_rust_string(ptr: *const i8) -> String {
 ///
 /// `Err` if the given file is not a graph or is not a DAG,
 /// otherwise `Ok` with the parsed graph.
-pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
+pub fn parse_from_file(path: &str) -> Result<Graph, DotGraphError> {
     if !Path::new(path).exists() {
         return Err(DotGraphError::InvalidGraph(String::from(path)));
     }
@@ -44,6 +44,32 @@ pub fn parse(path: &str) -> Result<Graph, DotGraphError> {
         }
         if agisdirected(graph) == 0 {
             return Err(DotGraphError::UndirectedGraph(String::from(path)));
+        }
+
+        parse_graph(graph)
+    }
+}
+
+/// Parse the given dot format file from memory.
+///
+/// # Arguments
+///
+/// * `contents` - Contents of the dot file in `&str`
+///
+/// # Returns
+///
+/// `Err` if the given file is not a graph or is not a DAG,
+/// otherwise `Ok` with the parsed graph.
+pub fn parse_from_memory(contents: &str) -> Result<Graph, DotGraphError> {
+    let ccontents = CString::new(contents).unwrap();
+
+    unsafe {
+        let graph = agmemread(ccontents.as_ptr());
+        if graph.is_null() {
+            return Err(DotGraphError::InvalidGraph(String::from(contents)));
+        }
+        if agisdirected(graph) == 0 {
+            return Err(DotGraphError::UndirectedGraph(String::from(contents)));
         }
 
         parse_graph(graph)

@@ -47,7 +47,13 @@ Or, try building from the source code yourself following the [guide](https://gra
 use dot_graph::prelude::*;
 
 fn main() -> Result<(), DotGraphError> {
-  let graph = parser::parse(/* path */)?;
+  /* parse from file */
+  let graph = parser::parse_from_file(/* path */)?;
+  let mut stdout = std::io::stdout();
+  graph.to_dot(&mut stdout)?;
+
+  /* parse from memory */
+  let graph = parser::parse_from_memory(/* dot file contents in memory */)?;
   let mut stdout = std::io::stdout();
   graph.to_dot(&mut stdout)?;
   
