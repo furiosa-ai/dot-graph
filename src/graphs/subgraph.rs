@@ -17,7 +17,7 @@ use rayon::prelude::*;
 /// A `SubGraph` holds indices of its own nodes and edges,
 /// and its children subgraphs.
 ///
-/// ```
+/// ```ignore
 /// subgraph A {
 ///     subgraph B {
 ///         node C
