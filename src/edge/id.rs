@@ -4,10 +4,13 @@ use std::io::{Result, Write};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EdgeId {
+    /// Start point's node id
     pub(crate) from: NodeId,
+    /// Start point's port
     pub(crate) tailport: Option<String>,
-
+    /// End point's node id
     pub(crate) to: NodeId,
+    /// End point's port
     pub(crate) headport: Option<String>,
 }
 
@@ -21,22 +24,18 @@ impl EdgeId {
         EdgeId { from, tailport, to, headport }
     }
 
-    /// Start point's node id
     pub fn from(&self) -> &NodeId {
         &self.from
     }
 
-    /// Start point's port
     pub fn tailport(&self) -> &Option<String> {
         &self.tailport
     }
 
-    /// End point's node id
     pub fn to(&self) -> &NodeId {
         &self.to
     }
 
-    /// End point's port
     pub fn headport(&self) -> &Option<String> {
         &self.headport
     }
