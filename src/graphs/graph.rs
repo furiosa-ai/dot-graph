@@ -1,8 +1,8 @@
 use crate::{
     edge::{Edge, EdgeId},
+    error::DotGraphError,
     graphs::{igraph::IGraph, subgraph::SubGraph},
     node::{Node, NodeId},
-    DotGraphError,
 };
 
 use std::collections::{HashMap, HashSet, VecDeque};

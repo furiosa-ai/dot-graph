@@ -44,8 +44,7 @@ Or, try building from the source code yourself following the [guide](https://gra
 ## Usage
 
 ```rust
-use dot_graph::parser;
-use dot_graph::DotGraphError;
+use dot_graph::prelude::*;
 
 fn main() -> Result<(), DotGraphError> {
   let graph = parser::parse(/* path */)?;
