@@ -1,19 +1,23 @@
 use crate::{
+    attr::Attr,
     edge::EdgeId,
     graphs::graph::{Graph, GraphId},
     node::NodeId,
+    utils,
 };
-use rayon::prelude::*;
+
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 
+use rayon::prelude::*;
+
 #[derive(Debug, Clone, Eq)]
 /// A `SubGraph` holds indices of its own nodes and edges,
 /// and its children subgraphs.
 ///
-/// ```
+/// ```ignore
 /// subgraph A {
 ///     subgraph B {
 ///         node C
@@ -24,13 +28,14 @@ use std::io::Write;
 pub struct SubGraph {
     /// Name of the subgraph
     pub(crate) id: GraphId,
-
     /// Ids of its children subgraphs, referenced in `Graph`
     pub(crate) subgraph_ids: HashSet<GraphId>,
     /// Ids of its own nodes, referened in `Graph`
     pub(crate) node_ids: HashSet<NodeId>,
     /// Ids of its own edges, referenced in `Graph`
     pub(crate) edge_ids: HashSet<EdgeId>,
+    /// Attributes of the graph in key, value mappings
+    pub(crate) attrs: HashSet<Attr>,
 }
 
 impl PartialEq for SubGraph {
@@ -54,6 +59,10 @@ impl Borrow<GraphId> for SubGraph {
 impl SubGraph {
     pub fn id(&self) -> &GraphId {
         &self.id
+    }
+
+    pub fn attrs(&self) -> &HashSet<Attr> {
+        &self.attrs
     }
 
     pub fn subgraphs(&self) -> HashSet<&GraphId> {
@@ -83,7 +92,9 @@ impl SubGraph {
         let edge_ids: HashSet<EdgeId> =
             self.edge_ids.par_iter().filter(|id| edge_ids.contains(id)).cloned().collect();
 
-        SubGraph { id, subgraph_ids, node_ids, edge_ids }
+        let attrs = self.attrs.clone();
+
+        SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs }
     }
 
     pub(super) fn extract_subgraph(&self, subgraph_ids: &HashSet<&GraphId>) -> Option<SubGraph> {
@@ -96,8 +107,9 @@ impl SubGraph {
             let id = self.id.clone();
             let node_ids = self.node_ids.clone();
             let edge_ids = self.edge_ids.clone();
+            let attrs = self.attrs.clone();
 
-            Some(SubGraph { id, subgraph_ids, node_ids, edge_ids })
+            Some(SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs })
         }
     }
 
@@ -111,12 +123,24 @@ impl SubGraph {
     where
         W: Write,
     {
+        let id = utils::pretty_id(&self.id);
         if indent == 0 {
-            writeln!(writer, "digraph {} {{", self.id)?;
+            writeln!(writer, "digraph {id} {{")?;
         } else {
             (0..indent).try_for_each(|_| write!(writer, "\t"))?;
+            writeln!(writer, "subgraph {id} {{")?;
+        }
 
-            writeln!(writer, "subgraph {} {{", self.id)?;
+        if !self.attrs.is_empty() {
+            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
+            writeln!(writer, "graph [")?;
+
+            for attr in &self.attrs {
+                attr.to_dot(indent + 1, writer)?;
+            }
+
+            (0..=indent).try_for_each(|_| write!(writer, "\t"))?;
+            writeln!(writer, "]")?;
         }
 
         for id in &self.subgraph_ids {

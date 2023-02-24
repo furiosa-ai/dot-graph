@@ -1,12 +1,15 @@
 use crate::{
+    attr::Attr,
     edge::{Edge, EdgeId},
     graphs::{graph::GraphId, subgraph::SubGraph},
     node::{Node, NodeId},
 };
-use rayon::prelude::*;
+
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+
+use rayon::prelude::*;
 
 #[derive(Debug, Clone, Eq)]
 /// An `IGraph` is an intermediate representation, to be transformed to `SubGraph` after parsing.
@@ -17,13 +20,14 @@ use std::hash::{Hash, Hasher};
 pub(crate) struct IGraph {
     /// Name of the igraph
     id: GraphId,
-
     /// Its children subgraphs
     igraphs: HashSet<IGraph>,
     /// Its own nodes
     nodes: HashSet<Node>,
     /// Its own edges
     edges: HashSet<Edge>,
+    /// Attributes of the graph in key, value mappings
+    attrs: HashSet<Attr>,
 }
 
 impl PartialEq for IGraph {
@@ -50,8 +54,9 @@ impl IGraph {
         igraphs: HashSet<IGraph>,
         nodes: HashSet<Node>,
         edges: HashSet<Edge>,
+        attrs: HashSet<Attr>,
     ) -> IGraph {
-        IGraph { id, igraphs, nodes, edges }
+        IGraph { id, igraphs, nodes, edges, attrs }
     }
 
     /// Convert `IGraph` to a set of `SubGraph`s, an unfolded subgraph tree
@@ -73,7 +78,9 @@ impl IGraph {
         let edge_ids: HashSet<EdgeId> =
             (self.edges.par_iter()).map(|edge| edge.id.clone()).collect();
 
-        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids };
+        let attrs = self.attrs.clone();
+
+        let subgraph = SubGraph { id, subgraph_ids, node_ids, edge_ids, attrs };
 
         subgraphs.insert(subgraph);
 
