@@ -35,7 +35,7 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .parse_callbacks(Box::new(ignored_macros))
-        .rustfmt_bindings(true)
+        .formatter(bindgen::Formatter::Rustfmt)
         .generate() // Finish the builder and generate the bindings.
         .expect("unable to generate bindings");
 
