@@ -1,6 +1,6 @@
 [package]
 name = "graphviz-rs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["FuriosaAI, Inc."]
 description = "A parser for directed graph in dot format with FFI to Graphviz cgraph library"
 readme = "README.md"
