@@ -1,6 +1,6 @@
 use std::str;
 
-use dot_graph::prelude::*;
+use graphviz_rs::prelude::*;
 
 use serial_test::serial;
 
